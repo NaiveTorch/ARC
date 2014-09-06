@@ -1,0 +1,19 @@
+#!/usr/bin/env python
+
+# Copyright 2014 The Chromium Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+"""Runner for gjslint and its dependencies, using a source checkout."""
+
+import sys
+
+# Modify the Python module search path to add the appropriate source code
+# subdirectories for the various tools that make up flake8.
+sys.path.insert(0, 'third_party/tools/python_gflags')
+sys.path.insert(0, 'third_party/tools')
+
+from closure_linter.gjslint import main
+
+if __name__ == '__main__':
+  main()

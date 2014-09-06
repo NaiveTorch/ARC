@@ -1,0 +1,21 @@
+# Copyright 2014 The Chromium Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+#
+# A list of symbols that should not be referred to in any object.
+#
+# __read_chk and variants should never appear because we don't use
+# -D_FORTIFY_SOURCE (crbug.com/226930).
+#
+# TODO(crbug.com/230900): Check more symbols like __cxa_throw and
+# __cxa_guard_acquire.
+#
+__getcwd_chk
+__pread64_chk
+__pread_chk
+__read_chk
+__readlink_chk
+__readlinkat_chk
+__realpath_chk
+__recv_chk
+__recvfrom_chk

@@ -1,0 +1,3 @@
+The vendor renderscript libraries are not public domain licensed, but we are
+properly gathering their licenses during configure time by running a
+notice_only ninja generating pass over all sources.

@@ -1,0 +1,14 @@
+This directory complements Bionic for x86-64, as upstream Bionic lacks
+a file which should be copied from FreeBSD.
+
+base/head/sys/amd64/include/fpu.h is downloaded from
+http://svnweb.freebsd.org/base/head/sys/amd64/include/fpu.h?revision=127914&view=co
+
+base/head/lib/msun/amd64/e_sqrtf.S is downloaded from
+http://svnweb.freebsd.org/base/head/lib/msun/amd64/e_sqrtf.S?revision=192760&view=co
+
+base/head/lib/msun/amd64/fenv.c is downloaded from
+http://svnweb.freebsd.org/base/head/lib/msun/amd64/fenv.c?revision=143708&view=co
+
+NOTICE is downloaded from
+curl http://svnweb.freebsd.org/base/head/COPYRIGHT?view=co > NOTICE

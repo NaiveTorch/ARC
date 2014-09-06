@@ -1,0 +1,14 @@
+This directory complements Bionic for x86-64, as upstream Bionic lacks
+a few file which should be copied from OpenBSD.
+
+Note - any file that you add here needs to have its license added to
+NOTICE!  OpenBSD files seem to have a great variety of licenses and copyrights
+so each should be represented in NOTICE to be sure we have proper compliance.
+
+src/sys/arch/amd64/include/setjmp.h is downloaded from
+
+http://www.openbsd.org/cgi-bin/cvsweb/src/sys/arch/amd64/include/setjmp.h?rev=1.1;content-type=text%2Fplain
+
+src/lib/libc/arch/amd64/gen/setjmp.S is downloaded from
+
+http://www.openbsd.org/cgi-bin/cvsweb/src/lib/libc/arch/amd64/gen/setjmp.S?rev=1.3;content-type=text%2Fplain

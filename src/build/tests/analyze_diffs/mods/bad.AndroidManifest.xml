@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.example">
+    <!-- ARC MOD BEGIN -->
+    <application android:name="after_mods"/>
+    <!-- ARC MOD END -->
+    <!-- something outside mod region -->
+</manifest>

@@ -1,0 +1,363 @@
+[submodule "third_party/android/dalvik"]
+	path = third_party/android/dalvik
+	url = https://android.googlesource.com/platform/dalvik
+[submodule "third_party/android/libcore"]
+	path = third_party/android/libcore
+	url = https://android.googlesource.com/platform/libcore
+[submodule "third_party/android/system/core"]
+	path = third_party/android/system/core
+	url = https://android.googlesource.com/platform/system/core
+[submodule "third_party/android/external/safe-iop"]
+	path = third_party/android/external/safe-iop
+	url = https://android.googlesource.com/platform/external/safe-iop
+[submodule "third_party/android/external/icu4c"]
+	path = third_party/android/external/icu4c
+	url = https://android.googlesource.com/platform/external/icu4c
+[submodule "third_party/android/external/zlib"]
+	path = third_party/android/external/zlib
+	url = https://android.googlesource.com/platform/external/zlib
+[submodule "third_party/android/external/fdlibm"]
+	path = third_party/android/external/fdlibm
+	url = https://android.googlesource.com/platform/external/fdlibm
+[submodule "third_party/android/external/openssl"]
+	path = third_party/android/external/openssl
+	url = https://android.googlesource.com/platform/external/openssl
+[submodule "third_party/android/external/expat"]
+	path = third_party/android/external/expat
+	url = https://android.googlesource.com/platform/external/expat
+[submodule "third_party/android/frameworks/base"]
+	path = third_party/android/frameworks/base
+	url = https://android.googlesource.com/platform/frameworks/base
+[submodule "third_party/android/external/skia"]
+	path = third_party/android/external/skia
+	url = https://android.googlesource.com/platform/external/skia
+[submodule "third_party/android/external/freetype"]
+	path = third_party/android/external/freetype
+	url = https://android.googlesource.com/platform/external/freetype
+[submodule "third_party/android/external/giflib"]
+	path = third_party/android/external/giflib
+	url = https://android.googlesource.com/platform/external/giflib
+[submodule "third_party/android/external/libpng"]
+	path = third_party/android/external/libpng
+	url = https://android.googlesource.com/platform/external/libpng
+[submodule "third_party/android/external/jpeg"]
+	path = third_party/android/external/jpeg
+	url = https://android.googlesource.com/platform/external/jpeg
+[submodule "third_party/android/external/webp"]
+	path = third_party/android/external/webp
+	url = https://android.googlesource.com/platform/external/webp
+[submodule "third_party/android/external/harfbuzz"]
+	path = third_party/android/external/harfbuzz
+	url = https://android.googlesource.com/platform/external/harfbuzz
+[submodule "third_party/android/hardware/libhardware"]
+	path = third_party/android/hardware/libhardware
+	url = https://android.googlesource.com/platform/hardware/libhardware
+[submodule "third_party/android/external/sqlite"]
+	path = third_party/android/external/sqlite
+	url = https://android.googlesource.com/platform/external/sqlite
+[submodule "third_party/android/development"]
+	path = third_party/android/development
+	url = https://android.googlesource.com/platform/development
+[submodule "third_party/android/external/sonivox"]
+	path = third_party/android/external/sonivox
+	url = https://android.googlesource.com/platform/external/sonivox
+[submodule "third_party/android/frameworks/opt/emoji"]
+	path = third_party/android/frameworks/opt/emoji
+	url = https://android.googlesource.com/platform/frameworks/opt/emoji
+[submodule "third_party/android/hardware/libhardware_legacy"]
+	path = third_party/android/hardware/libhardware_legacy
+	url = https://android.googlesource.com/platform/hardware/libhardware_legacy
+[submodule "third_party/android/external/chromium"]
+	path = third_party/android/external/chromium
+	url = https://android.googlesource.com/platform/external/chromium
+[submodule "third_party/android/system/media"]
+	path = third_party/android/system/media
+	url = https://android.googlesource.com/platform/system/media
+[submodule "third_party/android/external/tremolo"]
+	path = third_party/android/external/tremolo
+	url = https://android.googlesource.com/platform/external/tremolo
+[submodule "third_party/android/external/flac"]
+	path = third_party/android/external/flac
+	url = https://android.googlesource.com/platform/external/flac
+[submodule "third_party/android/external/libvpx"]
+	path = third_party/android/external/libvpx
+	url = https://android.googlesource.com/platform/external/libvpx
+[submodule "third_party/googletest"]
+	path = third_party/googletest
+	url = https://chromium.googlesource.com/external/googletest.git
+[submodule "third_party/testing/gmock"]
+	path = third_party/testing/gmock
+	url = https://chromium.googlesource.com/external/gmock.git
+[submodule "third_party/libyuv"]
+	path = third_party/libyuv
+	url = https://chromium.googlesource.com/external/libyuv.git
+[submodule "third_party/android/frameworks/av"]
+	path = third_party/android/frameworks/av
+	url = https://android.googlesource.com/platform/frameworks/av
+[submodule "third_party/android/frameworks/native"]
+	path = third_party/android/frameworks/native
+	url = https://android.googlesource.com/platform/frameworks/native
+[submodule "third_party/android/external/gcc-demangle"]
+	path = third_party/android/external/gcc-demangle
+	url = https://android.googlesource.com/platform/external/gcc-demangle
+[submodule "third_party/android/libnativehelper"]
+	path = third_party/android/libnativehelper
+	url = https://android.googlesource.com/platform/libnativehelper
+[submodule "third_party/android/external/speex"]
+	path = third_party/android/external/speex
+	url = https://android.googlesource.com/platform/external/speex
+[submodule "third_party/android/external/aac"]
+	path = third_party/android/external/aac
+	url = https://android.googlesource.com/platform/external/aac
+[submodule "third_party/android/frameworks/opt/telephony"]
+	path = third_party/android/frameworks/opt/telephony
+	url = https://android.googlesource.com/platform/frameworks/opt/telephony
+[submodule "third_party/android/sdk"]
+	path = third_party/android/sdk
+	url = https://android.googlesource.com/platform/sdk
+[submodule "third_party/android/external/protobuf"]
+	path = third_party/android/external/protobuf
+	url = https://android.googlesource.com/platform/external/protobuf
+[submodule "third_party/android/external/liblzf"]
+	path = third_party/android/external/liblzf
+	url = https://android.googlesource.com/platform/external/liblzf
+[submodule "third_party/android/external/junit"]
+	path = third_party/android/external/junit
+	url = https://android.googlesource.com/platform/external/junit
+[submodule "third_party/tools/flake8"]
+	path = third_party/tools/flake8
+	url = https://chromium.googlesource.com/external/bmcustodio/flake8.git
+[submodule "third_party/tools/pep8"]
+	path = third_party/tools/pep8
+	url = https://chromium.googlesource.com/external/jcrocholl/pep8
+[submodule "third_party/tools/pyflakes"]
+	path = third_party/tools/pyflakes
+	url = https://chromium.googlesource.com/external/pyflakes/pyflakes.git
+[submodule "third_party/valgrind"]
+	path = third_party/valgrind
+	url = https://chromium.googlesource.com/chromium/deps/valgrind/binaries.git
+[submodule "third_party/android/bionic"]
+	path = third_party/android/bionic
+	url = https://android.googlesource.com/platform/bionic
+[submodule "third_party/android/build"]
+	path = third_party/android/build
+	url = https://android.googlesource.com/platform/build
+[submodule "third_party/nacl-glibc"]
+	path = third_party/nacl-glibc
+	url = https://chromium.googlesource.com/native_client/nacl-glibc.git
+[submodule "third_party/tools/depot_tools"]
+	path = third_party/tools/depot_tools
+	url = https://chromium.googlesource.com/chromium/tools/depot_tools.git
+[submodule "third_party/android/external/stlport"]
+	path = third_party/android/external/stlport
+	url = https://android.googlesource.com/platform/external/stlport
+[submodule "third_party/android/abi/cpp"]
+	path = third_party/android/abi/cpp
+	url = https://android.googlesource.com/platform/abi/cpp/
+[submodule "third_party/android/cts"]
+	path = third_party/android/cts
+	url = https://android.googlesource.com/platform/cts
+[submodule "third_party/android/external/apache-xml"]
+	path = third_party/android/external/apache-xml
+	url = https://android.googlesource.com/platform/external/apache-xml
+[submodule "third_party/android/external/apache-http"]
+	path = third_party/android/external/apache-http
+	url = https://android.googlesource.com/platform/external/apache-http
+[submodule "third_party/android/external/nist-sip"]
+	path = third_party/android/external/nist-sip
+	url = https://android.googlesource.com/platform/external/nist-sip
+[submodule "third_party/android/external/tagsoup"]
+	path = third_party/android/external/tagsoup
+	url = https://android.googlesource.com/platform/external/tagsoup
+[submodule "third_party/android/external/libphonenumber"]
+	path = third_party/android/external/libphonenumber
+	url = https://android.googlesource.com/platform/external/libphonenumber
+[submodule "third_party/tools/ninja"]
+	path = third_party/tools/ninja
+	url = https://chromium.googlesource.com/external/martine/ninja.git
+[submodule "third_party/android/external/javasqlite"]
+	path = third_party/android/external/javasqlite
+	url = https://android.googlesource.com/platform/external/javasqlite
+[submodule "third_party/breakpad"]
+	path = third_party/breakpad
+	url = https://chromium.googlesource.com/external/google-breakpad.git
+[submodule "third_party/lss"]
+	path = third_party/lss
+	url = https://chromium.googlesource.com/external/linux-syscall-support/lss.git
+[submodule "third_party/android/frameworks/wilhelm"]
+	path = third_party/android/frameworks/wilhelm
+	url = https://android.googlesource.com/platform/frameworks/wilhelm
+[submodule "third_party/android/external/jhead"]
+	path = third_party/android/external/jhead
+	url = https://android.googlesource.com/platform/external/jhead
+[submodule "third_party/tools/crosutils"]
+	path = third_party/tools/crosutils
+	url = https://chromium.googlesource.com/chromiumos/platform/crosutils
+[submodule "third_party/nacl-newlib"]
+	path = third_party/nacl-newlib
+	url = https://chromium.googlesource.com/native_client/nacl-newlib
+[submodule "third_party/android/frameworks/opt/calendar"]
+	path = third_party/android/frameworks/opt/calendar
+	url = https://android.googlesource.com/platform/frameworks/opt/calendar
+[submodule "third_party/android/device/generic/goldfish"]
+	path = third_party/android/device/generic/goldfish
+	url = https://android.googlesource.com/device/generic/goldfish
+[submodule "third_party/android/external/harfbuzz_ng"]
+	path = third_party/android/external/harfbuzz_ng
+	url = https://android.googlesource.com/platform/external/harfbuzz_ng
+[submodule "third_party/android/external/sfntly"]
+	path = third_party/android/external/sfntly
+	url = https://android.googlesource.com/platform/external/sfntly
+[submodule "third_party/android/external/libgsm"]
+	path = third_party/android/external/libgsm
+	url = https://android.googlesource.com/platform/external/libgsm
+[submodule "third_party/android/art"]
+	path = third_party/android/art
+	url = https://android.googlesource.com/platform/art
+[submodule "third_party/android/external/chromium_org"]
+	path = third_party/android/external/chromium_org
+	url = https://android.googlesource.com/platform/external/chromium_org
+[submodule "third_party/android/external/chromium_org__v8"]
+	path = third_party/android/external/chromium_org__v8
+	url = https://android.googlesource.com/platform/external/chromium_org/v8
+[submodule "third_party/android/external/chromium_org__third_party_WebKit"]
+	path = third_party/android/external/chromium_org__third_party_WebKit
+	url = https://android.googlesource.com/platform/external/chromium_org/third_party/WebKit
+[submodule "third_party/android/external/chromium_org__third_party_angle_dx11"]
+	path = third_party/android/external/chromium_org__third_party_angle_dx11
+	url = https://android.googlesource.com/platform/external/chromium_org/third_party/angle_dx11
+[submodule "third_party/android/external/chromium_org__third_party_eyesfree_src_android_java_src_com_googlecode_eyesfree_braille"]
+	path = third_party/android/external/chromium_org__third_party_eyesfree_src_android_java_src_com_googlecode_eyesfree_braille
+	url = https://android.googlesource.com/platform/external/chromium_org/third_party/eyesfree/src/android/java/src/com/googlecode/eyesfree/braille
+[submodule "third_party/android/external/chromium_org__third_party_freetype"]
+	path = third_party/android/external/chromium_org__third_party_freetype
+	url = https://android.googlesource.com/platform/external/chromium_org/third_party/freetype
+[submodule "third_party/android/external/chromium_org__third_party_icu"]
+	path = third_party/android/external/chromium_org__third_party_icu
+	url = https://android.googlesource.com/platform/external/chromium_org/third_party/icu
+[submodule "third_party/android/external/chromium_org__third_party_leveldatabase_src"]
+	path = third_party/android/external/chromium_org__third_party_leveldatabase_src
+	url = https://android.googlesource.com/platform/external/chromium_org/third_party/leveldatabase/src
+[submodule "third_party/android/external/chromium_org__third_party_libjingle_source_talk"]
+	path = third_party/android/external/chromium_org__third_party_libjingle_source_talk
+	url = https://android.googlesource.com/platform/external/chromium_org/third_party/libjingle/source/talk
+[submodule "third_party/android/external/chromium_org__third_party_libphonenumber_src_phonenumbers"]
+	path = third_party/android/external/chromium_org__third_party_libphonenumber_src_phonenumbers
+	url = https://android.googlesource.com/platform/external/chromium_org/third_party/libphonenumber/src/phonenumbers
+[submodule "third_party/android/external/chromium_org__third_party_libphonenumber_src_resources"]
+	path = third_party/android/external/chromium_org__third_party_libphonenumber_src_resources
+	url = https://android.googlesource.com/platform/external/chromium_org/third_party/libphonenumber/src/resources
+[submodule "third_party/android/external/chromium_org__third_party_mesa_src"]
+	path = third_party/android/external/chromium_org__third_party_mesa_src
+	url = https://android.googlesource.com/platform/external/chromium_org/third_party/mesa/src
+[submodule "third_party/android/external/chromium_org__third_party_openssl"]
+	path = third_party/android/external/chromium_org__third_party_openssl
+	url = https://android.googlesource.com/platform/external/chromium_org/third_party/openssl
+[submodule "third_party/android/external/chromium_org__third_party_opus_src"]
+	path = third_party/android/external/chromium_org__third_party_opus_src
+	url = https://android.googlesource.com/platform/external/chromium_org/third_party/opus/src
+[submodule "third_party/android/external/chromium_org__third_party_ots"]
+	path = third_party/android/external/chromium_org__third_party_ots
+	url = https://android.googlesource.com/platform/external/chromium_org/third_party/ots
+[submodule "third_party/android/external/chromium_org__third_party_skia_gyp"]
+	path = third_party/android/external/chromium_org__third_party_skia_gyp
+	url = https://android.googlesource.com/platform/external/chromium_org/third_party/skia/gyp
+[submodule "third_party/android/external/chromium_org__third_party_skia_include"]
+	path = third_party/android/external/chromium_org__third_party_skia_include
+	url = https://android.googlesource.com/platform/external/chromium_org/third_party/skia/include
+[submodule "third_party/android/external/chromium_org__third_party_skia_src"]
+	path = third_party/android/external/chromium_org__third_party_skia_src
+	url = https://android.googlesource.com/platform/external/chromium_org/third_party/skia/src
+[submodule "third_party/android/external/chromium_org__third_party_smhasher_src"]
+	path = third_party/android/external/chromium_org__third_party_smhasher_src
+	url = https://android.googlesource.com/platform/external/chromium_org/third_party/smhasher/src
+[submodule "third_party/android/external/chromium_org__third_party_yasm_source_patched-yasm"]
+	path = third_party/android/external/chromium_org__third_party_yasm_source_patched-yasm
+	url = https://android.googlesource.com/platform/external/chromium_org/third_party/yasm/source/patched-yasm
+[submodule "third_party/android/external/chromium_org__sdch_open-vcdiff"]
+	path = third_party/android/external/chromium_org__sdch_open-vcdiff
+	url = https://android.googlesource.com/platform/external/chromium_org/sdch/open-vcdiff
+[submodule "third_party/android/external/chromium_org__testing_gtest"]
+	path = third_party/android/external/chromium_org__testing_gtest
+	url = https://android.googlesource.com/platform/external/chromium_org/testing/gtest
+[submodule "third_party/android/ndk"]
+	path = third_party/android/ndk
+	url = https://android.googlesource.com/platform/ndk
+[submodule "third_party/android/frameworks/webview"]
+	path = third_party/android/frameworks/webview
+	url = https://android.googlesource.com/platform/frameworks/webview
+[submodule "third_party/arm-neon-tests"]
+	path = third_party/arm-neon-tests
+	url = https://chromium.googlesource.com/external/arm-neon-tests/arm-neon-tests.git
+[submodule "third_party/android/external/noto-fonts"]
+	path = third_party/android/external/noto-fonts
+	url = https://android.googlesource.com/platform/external/noto-fonts
+[submodule "third_party/android/system/security"]
+	path = third_party/android/system/security
+	url = https://android.googlesource.com/platform/system/security
+[submodule "third_party/android/frameworks/opt/net/voip"]
+	path = third_party/android/frameworks/opt/net/voip
+	url = https://android.googlesource.com/platform/frameworks/opt/net/voip
+[submodule "third_party/chromium-ppapi"]
+	path = third_party/chromium-ppapi
+	url = https://chromium.googlesource.com/chromium/src
+[submodule "third_party/native_client"]
+	path = third_party/native_client
+	url = https://chromium.googlesource.com/native_client/src/native_client
+[submodule "third_party/gold"]
+	path = third_party/gold
+	url = https://chromium.googlesource.com/chromium/deps/gold.git
+[submodule "third_party/android/external/llvm"]
+	path = third_party/android/external/llvm
+	url = https://android.googlesource.com/platform/external/llvm
+[submodule "third_party/android/frameworks/compile/slang"]
+	path = third_party/android/frameworks/compile/slang
+	url = https://android.googlesource.com/platform/frameworks/compile/slang
+[submodule "third_party/android/frameworks/compile/libbcc"]
+	path = third_party/android/frameworks/compile/libbcc
+	url = https://android.googlesource.com/platform/frameworks/compile/libbcc
+[submodule "third_party/android/frameworks/rs"]
+	path = third_party/android/frameworks/rs
+	url = https://android.googlesource.com/platform/frameworks/rs
+[submodule "third_party/android/external/libunwind"]
+	path = third_party/android/external/libunwind
+	url = https://android.googlesource.com/platform/external/libunwind
+[submodule "third_party/android/packages/providers/ContactsProvider"]
+	path = third_party/android/packages/providers/ContactsProvider
+	url = https://android.googlesource.com/platform/packages/providers/ContactsProvider
+[submodule "third_party/android/frameworks/ex"]
+	path = third_party/android/frameworks/ex
+	url = https://android.googlesource.com/platform/frameworks/ex
+[submodule "third_party/android/external/guava"]
+	path = third_party/android/external/guava
+	url = https://android.googlesource.com/platform/external/guava
+[submodule "third_party/android/external/jsr305"]
+	path = third_party/android/external/jsr305
+	url = https://android.googlesource.com/platform/external/jsr305
+[submodule "third_party/android/frameworks/opt/vcard"]
+	path = third_party/android/frameworks/opt/vcard
+	url = https://android.googlesource.com/platform/frameworks/opt/vcard
+[submodule "third_party/android/external/dexmaker"]
+	path = third_party/android/external/dexmaker
+	url = https://android.googlesource.com/platform/external/dexmaker
+[submodule "third_party/android/external/okhttp"]
+	path = third_party/android/external/okhttp
+	url = https://android.googlesource.com/platform/external/okhttp
+[submodule "third_party/android/external/bouncycastle"]
+	path = third_party/android/external/bouncycastle
+	url = https://android.googlesource.com/platform/external/bouncycastle
+[submodule "third_party/android/frameworks/support"]
+	path = third_party/android/frameworks/support
+	url = https://android.googlesource.com/platform/frameworks/support
+[submodule "third_party/android/prebuilts/clang/linux-x86/host/3.5"]
+	path = third_party/android/prebuilts/clang/linux-x86/host/3.5
+	url = https://android.googlesource.com/platform/prebuilts/clang/linux-x86/host/3.5
+[submodule "third_party/android/external/mp4parser"]
+	path = third_party/android/external/mp4parser
+	url = https://android.googlesource.com/platform/external/mp4parser/
+[submodule "third_party/android/packages/apps/Gallery2"]
+	path = third_party/android/packages/apps/Gallery2
+	url = https://android.googlesource.com/platform/packages/apps/Gallery2
+[submodule "third_party/android/external/xmp_toolkit"]
+	path = third_party/android/external/xmp_toolkit
+	url = https://android.googlesource.com/platform/external/xmp_toolkit

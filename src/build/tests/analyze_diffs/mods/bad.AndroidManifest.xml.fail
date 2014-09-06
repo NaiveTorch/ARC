@@ -1,0 +1,7 @@
+Errors found in file src/build/tests/analyze_diffs/mods/bad.AndroidManifest.xml:
+
+(Use diff -u src/build/tests/analyze_diffs/third_party/bad.AndroidManifest.xml \
+src/build/tests/analyze_diffs/mods/bad.AndroidManifest.xml to verify.)
+
+Line 7: Line added outside mod region:
+    <!-- something outside mod region -->

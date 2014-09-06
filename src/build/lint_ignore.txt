@@ -1,0 +1,65 @@
+# ---------------------------------------------------------------------------
+# This file sets up default exclusions for special cases of source code that
+# would fail the various lint style checks used by lint_source.py
+# This file complies with JSON with an exception that allows comments to be
+# written, which begin with # character and last until the end of the line.
+#
+# This is a quick example of what each line should look like:
+#
+#   # Exclude src/xyzzy.cpp from the checks "gnusto" and "rezrov"
+#   "src/xyzzy.cpp": ["gnusto", "rezrov"],
+# ---------------------------------------------------------------------------
+
+{
+  # These are from freebsd but not originally in Android so have non-Android
+  # copyright.
+  "mods/android/bionic/libm/amd64/fenv.c": ["copyright"],
+  "mods/android/bionic/libm/include/amd64/fenv.h": ["copyright"],
+
+  # These files comes from NaCl and so have non-Android copyrights.
+  "mods/android/bionic/libc/arch-nacl/syscalls/irt_nonsfi.h": ["copyright"],
+  "mods/android/bionic/libc/include/ucontext.h": ["copyright"],
+
+  # Dalvik test does not allow to inject ARC MOD marks inside test expectation.
+  # See also mods/upstream/dalvik-test-007-exceptions.
+  "mods/android/dalvik/tests/007-exceptions/expected.txt": ["analyze_diffs"],
+
+  # TODO(lpique) Fix the file and remove the line
+  "src/build/buildbot_watcher/show_review_counts.js": ["gjslint"],
+
+  # TODO(penghuang) remove it when flake8 W901 support #NOQA
+  "src/build/run_integration_tests.py": ["flake8"],
+
+  # File moved verbatim from buildbot (needs to be refactored).
+  "src/buildbot/build_steps.py": ["flake8"],
+
+  # This file contains the mix of c-style code and cpp-style code.
+  # These files have enough intentional violations that we prefer to ignore
+  # the entire file rather than use NOLINT as many times as would be needed:
+  "src/common/chromium_build_config.h": ["cpplint"],
+  "src/common/trace_event_internal.h": ["cpplint"],
+
+  # These files should be fixed:
+  "src/ndk_translation/trampolines.cc": ["cpplint"],
+
+  # That file contains large intrinsics table with it's own style.
+  "src/ndk_translation/backend/x86_64/intrinsics.cc": ["cpplint"],
+
+  # Third party files.
+  "third_party/examples/san-angeles/jni/importgl.h": ["cpplint"],
+  "third_party/examples/replicaisland/tools/ExtractPoints.js": ["gjslint"],
+  "third_party/examples/san-angeles/jni/app.h": ["cpplint"],
+  "third_party/examples/san-angeles/jni/cams.h": ["cpplint"],
+  "third_party/examples/san-angeles/jni/shapes.h": ["cpplint"],
+
+  # These are the Khronos GL headers with their own style.
+  "third_party/khronos/GLES/gl.h": ["cpplint"],
+  "third_party/khronos/GLES/glext.h": ["cpplint"],
+  "third_party/khronos/GLES/glplatform.h": ["cpplint"],
+  "third_party/khronos/GLES2/gl2.h": ["cpplint"],
+  "third_party/khronos/GLES2/gl2ext.h": ["cpplint"],
+  "third_party/khronos/GLES2/gl2platform.h": ["cpplint"],
+
+  # chrome_test source.
+  "third_party/testing/chrome_test/chrome_test.js": ["gjslint", "analyze_diffs"]
+}

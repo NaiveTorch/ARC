@@ -1,0 +1,17 @@
+include_rules = [
+  "+base",
+  "+common",
+  "+gtest/gtest_prod.h",
+  "+native_client",
+  "+ppapi",
+  # Do NOT add "+plugin" here because most directories (such as common/) should
+  # not depend on it.
+]
+
+specific_include_rules = {
+  ".*_test\.cc": [
+    "+gmock",
+    "+gtest",
+    "+ppapi_mocks",
+  ]
+}

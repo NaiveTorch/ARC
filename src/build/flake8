@@ -1,0 +1,41 @@
+#!/usr/bin/env python
+
+# Copyright 2014 The Chromium Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+"""Runner for flake8 and its dependencies, using a source checkout."""
+
+import sys
+import warnings
+
+# Modify the Python module search path to add the appropriate source code
+# subdirectories for the various tools that make up flake8.
+sys.path.insert(0, 'third_party/tools/pyflakes')
+sys.path.insert(0, 'third_party/tools/pep8')
+sys.path.insert(0, 'third_party/tools/flake8')
+
+# We turn off writing of .pyc files here to avoid polluting the git submodule
+# checkouts with .pyc files, which would then show up as being modified from
+# the main repository.
+# TODO(lpique) See if the flake8 and pyflakes projects will take an
+# appropriate ignore configuration change.
+sys.dont_write_bytecode = True
+
+# We disable this warning in case someone has one of these modules already
+# installed globally. Otherwise one or more messages might be displayed like
+# this one:
+#
+#     /usr/lib/python2.7/dist-packages/setuptools/command/install_scripts.py:3:
+#     UserWarning: Module pep8 was already imported from
+#     third_party/tools/pep8/pep8.pyc, but
+#     /usr/local/lib/python2.7/dist-packages/pep8-1.4.2-py2.7.egg is being
+#     added to sys.path
+#       from pkg_resources import Distribution, PathMetadata, ensure_directory
+warnings.filterwarnings('ignore', r'Module \w+ was already imported from')
+
+# This must happen after the modifications above.
+from flake8.run import main
+
+if __name__ == '__main__':
+  main()

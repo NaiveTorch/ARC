@@ -1,0 +1,8 @@
+Errors found in file src/build/tests/analyze_diffs/mods/crbug257315_1.cpp:
+
+(Use diff -u src/build/tests/analyze_diffs/third_party/crbug257315_1.cpp \
+src/build/tests/analyze_diffs/mods/crbug257315_1.cpp to verify.)
+
+Line 3636: Line removed outside mod region:
+aaa
+

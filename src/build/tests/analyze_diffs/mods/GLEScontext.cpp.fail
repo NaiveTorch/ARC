@@ -1,0 +1,20 @@
+Errors found in file src/build/tests/analyze_diffs/mods/GLEScontext.cpp:
+
+(Use diff -u src/build/tests/analyze_diffs/third_party/GLEScontext.cpp \
+src/build/tests/analyze_diffs/mods/GLEScontext.cpp to verify.)
+
+Line 574: Upstream missing identifier:
+/* ARC MOD BEGIN UPSTREAM */
+Line 585: End tag does not match the start:
+/* ARC MOD END */
+Line 632: Upstream description file does not exist: src/build/tests/analyze_diffs/mods/upstream/TEST_NONEXISTING
+Line 769: Line removed outside mod region:
+}        
+
+Line 769: Line added outside mod region:
+}
+Line 843: Line removed outside mod region:
+  
+
+Line 843: Line added outside mod region:
+

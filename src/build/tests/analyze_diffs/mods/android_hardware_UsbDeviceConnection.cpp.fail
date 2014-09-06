@@ -1,0 +1,10 @@
+Errors found in file src/build/tests/analyze_diffs/mods/android_hardware_UsbDeviceConnection.cpp:
+
+(Use diff -u src/build/tests/analyze_diffs/third_party/android_hardware_UsbDeviceConnection.cpp \
+src/build/tests/analyze_diffs/mods/android_hardware_UsbDeviceConnection.cpp to verify.)
+
+Line 24: Line removed outside mod region:
+
+
+Line 33: Line added outside mod region:
+

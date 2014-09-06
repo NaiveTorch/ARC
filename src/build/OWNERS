@@ -1,0 +1,12 @@
+# Build scripts and other random scripts
+lpique@google.com
+mazda@google.com
+toyoshim@google.com
+
+# config.py does not need a specific reviewer
+per-file config.py=*
+# DEPS rolls can be reviewed by anyone
+per-file DEPS.*=*
+per-file sync_chrome.py=set noparent
+per-file sync_chrome.py=elijahtaylor@google.com
+per-file sync_chrome.py=hidehiko@google.com

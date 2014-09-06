@@ -1,0 +1,142 @@
+{
+   # TODO(crbug.com/404987): Ignore all memory allocation in global
+   # constructors as wo do not run global destructors.
+   no_global_destructors
+   Memcheck:Leak
+   fun:malloc
+   ...
+   fun:_ZN6soinfo12CallFunctionEPKcPFvvE
+   fun:_ZN6soinfo9CallArrayEPKcPPFvvEjb
+   fun:_ZN6soinfo16CallConstructorsEv
+   ...
+}
+{
+   # TODO(crbug.com/404987): As wo do not run global destructors,
+   # system properties will not be freed.
+   bionic_system_property_is_not_freed
+   Memcheck:Leak
+   fun:malloc
+   fun:map_prop_area_rw
+   fun:__system_property_area_init
+   ...
+}
+{
+   # Bionic does not free memory allocated by setenv at all.
+   # TODO(crbug.com/404987): Check the above statement just in case
+   # when we add global destructors support.
+   bionic_setenv_is_not_freed
+   Memcheck:Leak
+   fun:malloc
+   fun:setenv
+   fun:setenv
+   ...
+}
+{
+   # TODO(crbug.com/376666): Currently, our IRT thread implementation
+   # leaks glibc's pthread struct.
+   bare_metal_thread_leak_for_gprecise
+   Memcheck:Leak
+   fun:calloc
+   fun:*
+   fun:_dl_allocate_tls
+   fun:pthread_create@@GLIBC_2.1
+   fun:_ZN12_GLOBAL__N_122nacl_irt_thread_createEPFvvEPvS2_
+   fun:__pthread_clone
+   fun:pthread_create
+   ...
+}
+{
+   # TODO(crbug.com/376666): Currently, our IRT thread implementation
+   # leaks glibc's pthread struct.
+   bare_metal_thread_leak_for_gtrusty
+   Memcheck:Leak
+   fun:calloc
+   obj:/lib/i386-linux-gnu/ld-2.19.so
+   fun:_ZN12_GLOBAL__N_122nacl_irt_thread_createEPFvvEPvS2_
+   fun:__pthread_clone
+   fun:pthread_create
+   ...
+}
+{
+   # Chromium base's ThreadIdNameManager intentionally leaks the name
+   # of threads.
+   chromium_thread_name_is_intentionally_leaked
+   Memcheck:Leak
+   fun:malloc
+   fun:_Znwj
+   fun:_ZN4base19ThreadIdNameManager7SetNameEiPKc
+   fun:_ZN4base14PlatformThread7SetNameEPKc
+   fun:_ZN4base12SimpleThread10ThreadMainEv
+   fun:_ZN4base12_GLOBAL__N_110ThreadFuncEPv
+   fun:__thread_entry
+   fun:run_thread
+   fun:_ZN12_GLOBAL__N_19RunThreadEPv
+   fun:start_thread
+   fun:clone
+}
+{
+   # Bionic's string_test.cpp compares uninitialized values come from
+   # the same origin.
+   bionic_string_test_compare_uninitialzed_values_from_same_origin1
+   Memcheck:Cond
+   fun:memcmp
+   fun:_ZN18string_strcat_Test8TestBodyEv
+   fun:_ZN7testing8internal38HandleSehExceptionsInMethodIfSupportedINS_4TestEvEET0_PT_MS4_FS3_vEPKc
+   fun:_ZN7testing8internal35HandleExceptionsInMethodIfSupportedINS_4TestEvEET0_PT_MS4_FS3_vEPKc
+   fun:_ZN7testing4Test3RunEv
+   fun:_ZN7testing8TestInfo3RunEv
+   fun:_ZN7testing8TestCase3RunEv
+   fun:_ZN7testing8internal12UnitTestImpl11RunAllTestsEv
+   fun:_ZN7testing8internal38HandleSehExceptionsInMethodIfSupportedINS0_12UnitTestImplEbEET0_PT_MS4_FS3_vEPKc
+   fun:_ZN7testing8internal35HandleExceptionsInMethodIfSupportedINS0_12UnitTestImplEbEET0_PT_MS4_FS3_vEPKc
+   fun:_ZN7testing8UnitTest3RunEv
+   fun:main
+}
+{
+   # Bionic's string_test.cpp compares uninitialized values come from
+   # the same origin.
+   bionic_string_test_compare_uninitialzed_values_from_same_origin2
+   Memcheck:Cond
+   fun:memcmp
+   fun:_ZN18string_strcpy_Test8TestBodyEv
+   fun:_ZN7testing8internal38HandleSehExceptionsInMethodIfSupportedINS_4TestEvEET0_PT_MS4_FS3_vEPKc
+   fun:_ZN7testing8internal35HandleExceptionsInMethodIfSupportedINS_4TestEvEET0_PT_MS4_FS3_vEPKc
+   fun:_ZN7testing4Test3RunEv
+   fun:_ZN7testing8TestInfo3RunEv
+   fun:_ZN7testing8TestCase3RunEv
+   fun:_ZN7testing8internal12UnitTestImpl11RunAllTestsEv
+   fun:_ZN7testing8internal38HandleSehExceptionsInMethodIfSupportedINS0_12UnitTestImplEbEET0_PT_MS4_FS3_vEPKc
+   fun:_ZN7testing8internal35HandleExceptionsInMethodIfSupportedINS0_12UnitTestImplEbEET0_PT_MS4_FS3_vEPKc
+   fun:_ZN7testing8UnitTest3RunEv
+   fun:main
+}
+{
+   # Bionic's string_test.cpp compares uninitialized values come from
+   # the same origin.
+   bionic_string_test_compare_uninitialzed_values_from_same_origin3
+   Memcheck:Cond
+   fun:memcmp
+   fun:_ZN19string_strncat_Test8TestBodyEv
+   fun:_ZN7testing8internal38HandleSehExceptionsInMethodIfSupportedINS_4TestEvEET0_PT_MS4_FS3_vEPKc
+   fun:_ZN7testing8internal35HandleExceptionsInMethodIfSupportedINS_4TestEvEET0_PT_MS4_FS3_vEPKc
+   fun:_ZN7testing4Test3RunEv
+   fun:_ZN7testing8TestInfo3RunEv
+   fun:_ZN7testing8TestCase3RunEv
+   fun:_ZN7testing8internal12UnitTestImpl11RunAllTestsEv
+   fun:_ZN7testing8internal38HandleSehExceptionsInMethodIfSupportedINS0_12UnitTestImplEbEET0_PT_MS4_FS3_vEPKc
+   fun:_ZN7testing8internal35HandleExceptionsInMethodIfSupportedINS0_12UnitTestImplEbEET0_PT_MS4_FS3_vEPKc
+   fun:_ZN7testing8UnitTest3RunEv
+   fun:main
+}
+{
+   # Some of global initializers in shared object dlopen-ed by
+   # plugin_load_test leak.
+   ctors_leak_in_some_modules
+   Memcheck:Leak
+   fun:_Znwj
+   ...
+   fun:dlopen
+   ...
+   fun:_ZN37PluginTest_LoadAllLibrarySymbols_Test8TestBodyEv
+   ...
+}

@@ -1,0 +1,27 @@
+*.pyc
+*.swo
+*.swp
+*~
+.ninja_deps
+.ninja_log
+build.ninja
+out/
+# The mods/android/dalvik/vm/mterp/out directory is special and should not be
+# ignored. It contains machine-generated source for dalvikvm.
+!mods/android/dalvik/vm/mterp/out/
+tags
+third_party/.gclient_entries
+third_party/.gclient_last_sync
+third_party/android-cts
+third_party/android-cts-media
+third_party/android-sdk
+third_party/nacl_sdk
+third_party/ndk
+third_party/tools/closure_linter
+third_party/tools/python_gflags
+third_party/tools/python_mock
+.project
+.cproject
+.pydevproject
+.subversion
+internal
