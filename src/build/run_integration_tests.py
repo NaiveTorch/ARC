@@ -98,9 +98,9 @@ def get_configs_for_integration_tests():
     if ext == '.pyc':
       config_file = root + '.py'
     configs.append(config_file)
-  # This does not define get_integration_test_runners but needed by
-  # src/packaging/config.py, which is loaded when importing config_loader.
-  configs.append('src/posix_translation/config.py')
+  # These do not define get_integration_test_runners but used by other scripts.
+  configs.extend(['mods/android/external/stlport/config.py',
+                  'src/posix_translation/config.py'])
   return configs
 
 
@@ -255,7 +255,12 @@ def _run_suites(test_driver_list, args, prepare_only=False):
 
 
 def prepare_suites(args):
-  return _run_suites(_get_test_driver_list(args), args, prepare_only=True)
+  test_driver_list = _get_test_driver_list(args)
+  if not test_driver_list:
+    # unittest.* run only on Chrome OS and if they are selected with -t,
+    # test_driver_list becomes empty. That is OK.
+    return True
+  return _run_suites(test_driver_list, args, prepare_only=True)
 
 
 def list_fully_qualified_test_names(scoreboards, args):

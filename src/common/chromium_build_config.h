@@ -15,10 +15,6 @@
 #ifndef BUILD_BUILD_CONFIG_H_
 #define BUILD_BUILD_CONFIG_H_
 
-#if defined(__APPLE__)
-#include <TargetConditionals.h>
-#endif
-
 // A set of macros to use for platform detection.
 // ARC MOD BEGIN
 // Copied from chromium-ppapi. Libraries that use libchromium_base.a must
@@ -35,6 +31,10 @@
 #elif defined(ANDROID)
 #define OS_ANDROID 1
 #elif defined(__APPLE__)
+// only include TargetConditions after testing ANDROID as some android builds
+// on mac don't have this header available and it's not needed unless the target
+// is really mac/ios.
+#include <TargetConditionals.h>
 #define OS_MACOSX 1
 #if defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
 #define OS_IOS 1
@@ -51,9 +51,6 @@
 // we really are using glibc, not uClibc pretending to be glibc
 #define LIBC_GLIBC 1
 #endif
-// ARC MOD BEGIN
-// Removed check for __GLIBC__ or __UCLIBC__
-// ARC MOD END
 #elif defined(_WIN32)
 #define OS_WIN 1
 #define TOOLKIT_VIEWS 1

@@ -21,7 +21,6 @@
 import argparse
 import json
 import os
-import re
 import shlex
 import subprocess
 import sys
@@ -33,6 +32,7 @@ import build_options
 import toolchain
 import util.platform_util
 import util.remote_executor
+import util.test.unittest_util
 
 
 def _read_test_info(filename):
@@ -43,32 +43,10 @@ def _read_test_info(filename):
     return json.load(f)
 
 
-def _get_copied_files_for_remote(tests):
-  """Gets a list of the files that need to be copied to the remote device."""
-  copied_files = []
-  for test in tests:
-    test_path = build_common.get_build_path_for_executable(test)
-    if test_path not in copied_files:
-      copied_files.append(test_path)
-  return copied_files
-
-
-def _get_all_tests():
-  test_info_dir = build_common.get_remote_unittest_info_path()
-  test_info_files = os.listdir(test_info_dir)
-  tests = set()
-  for test_info_file in test_info_files:
-    # test info file name is something like bionic_test.1.json.
-    m = re.match(r'(.+)\.[0-9]+\.json', test_info_file)
-    if not m:
-      continue
-    tests.add(m.group(1))
-  return sorted(tests)
-
-
 def _construct_command(test_info):
   variables = test_info['variables'].copy()
   variables.setdefault('argv', '')
+  variables.setdefault('qemu_arm', '')
 
   if util.platform_util.is_running_on_chromeos():
     # On ChromeOS, binaries in directories mounted with noexec options are
@@ -82,6 +60,12 @@ def _construct_command(test_info):
       variables['runner'] = ' '.join(
           toolchain.get_bare_metal_runner(use_qemu_arm=False,
                                           bin_dir=arc_root_with_exec))
+      # Update --gtest_filter to re-enable the tests disabled only on qemu.
+      if variables.get('qemu_disabled_tests'):
+        variables['gtest_options'] = '--gtest_color=yes'
+        if variables.get('disabled_tests'):
+          variables['gtest_options'] = (
+              ' --gtest_filter=-' + variables['disabled_tests'])
     else:
       variables['runner'] = ' '.join(
           toolchain.get_nacl_runner(
@@ -109,11 +93,17 @@ def _run_unittest(tests, verbose):
   remote device where ninja is not installed.
   """
   failed_tests = []
+  unfound_tests = []
   for test in tests:
     index = 1
     while True:
       test_info = _read_test_info('%s.%d.json' % (test, index))
       if not test_info:
+        # The format of test info file is [test name].[index].json, where index
+        # is one of consecutive numbers from 1. If the test info file for index
+        # 1 is not found, that means the corresponding test does not exist.
+        if index == 1:
+          unfound_tests.append(test)
         break
       command = _construct_command(test_info)
       if verbose:
@@ -123,8 +113,11 @@ def _run_unittest(tests, verbose):
         print 'FAILED: ' + test
         failed_tests.append('%s.%d' % (test, index))
       index += 1
+  if unfound_tests:
+    print 'The following tests were not found: \n' + '\n'.join(unfound_tests)
   if failed_tests:
     print 'The following tests failed: \n' + '\n'.join(failed_tests)
+  if unfound_tests or failed_tests:
     return -1
   return 0
 
@@ -145,11 +138,10 @@ def main():
   parsed_args = parser.parse_args()
 
   if not parsed_args.tests:
-    parsed_args.tests = _get_all_tests()
+    parsed_args.tests = util.test.unittest_util.get_all_tests()
 
   if parsed_args.remote:
-    return util.remote_executor.run_remote_unittest(
-        parsed_args, _get_copied_files_for_remote(parsed_args.tests))
+    return util.remote_executor.run_remote_unittest(parsed_args)
   else:
     return _run_unittest(parsed_args.tests, parsed_args.verbose)
 

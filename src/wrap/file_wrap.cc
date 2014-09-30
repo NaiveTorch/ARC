@@ -64,11 +64,17 @@
 #endif
 
 // A macro to define an IRT wrapper and a function pointer to store
-// the real IRT function.
+// the real IRT function. Note that initializing __nacl_irt_<name>_real
+// with __nacl_irt_<name> by default is not a good idea because it requires
+// a static initializer.
 #define IRT_WRAPPER(name, ...)                              \
   extern int (*__nacl_irt_ ## name)(__VA_ARGS__);           \
   static int (*__nacl_irt_ ## name ## _real)(__VA_ARGS__);  \
   int (__nacl_irt_ ## name ## _wrap)(__VA_ARGS__)
+
+// A helper macro to show both DIR pointer and its file descriptor in
+// ARC strace.
+#define PRETIFY_DIRP(dirp) (dirp) ? __real_dirfd(dirp) : -1, (dirp)
 
 // Note about large file support in ARC:
 //
@@ -89,9 +95,12 @@ extern "C" {
 int __wrap_access(const char* pathname, int mode);
 int __wrap_chdir(const char* path);
 int __wrap_chown(const char* path, uid_t owner, gid_t group);
+int __wrap_closedir(DIR* dirp);
+int __wrap_dirfd(DIR* dirp);
 int __wrap_dlclose(const void* handle);
 void* __wrap_dlopen(const char* filename, int flag);
 void* __wrap_dlsym(const void* handle, const char* symbol);
+DIR* __wrap_fdopendir(int fd);
 char* __wrap_getcwd(char* buf, size_t size);
 int __wrap_getdents(
     unsigned int fd, struct dirent* dirp, unsigned int count);
@@ -100,14 +109,24 @@ char* __wrap_mkdtemp(char* tmpl);
 int __wrap_mkstemp(char* tmpl);
 int __wrap_mkstemps(char* tmpl, int suffix_len);
 int __wrap_open(const char* pathname, int flags, ...);
+DIR* __wrap_opendir(const char* name);
+struct dirent* __wrap_readdir(DIR* dirp);
+int __wrap_readdir_r(DIR* dirp, struct dirent* entry,
+                     struct dirent** result);
 ssize_t __wrap_readlink(const char* path, char* buf, size_t bufsiz);
 char* __wrap_realpath(const char* path, char* resolved_path);
 int __wrap_remove(const char* pathname);
 int __wrap_rename(const char* oldpath, const char* newpath);
+void __wrap_rewinddir(DIR* dirp);
 int __wrap_rmdir(const char* pathname);
+int __wrap_scandir(
+    const char* dirp, struct dirent*** namelist,
+    int (*filter)(const struct dirent*),
+    int (*compar)(const struct dirent**, const struct dirent**));
 int __wrap_stat(const char* filename, struct stat* buf);
 int __wrap_statfs(const char* path, struct statfs* stat);
 int __wrap_statvfs(const char* path, struct statvfs* stat);
+int __wrap_symlink(const char* oldp, const char* newp);
 FILE* __wrap_tmpfile();
 mode_t __wrap_umask(mode_t mask);
 int __wrap_unlink(const char* pathname);
@@ -115,17 +134,29 @@ int __wrap_utime(const char* filename, const struct utimbuf* times);
 int __wrap_utimes(const char* filename, const struct timeval times[2]);
 
 extern int __real_access(const char* pathname, int mode);
+extern int __real_closedir(DIR* dirp);
+extern int __real_dirfd(DIR* dirp);
 extern int __real_dlclose(const void* handle);
 extern void* __real_dlopen(const char* filename, int flag);
 extern void* __real_dlsym(const void* handle, const char* symbol);
+extern DIR* __real_fdopendir(int fd);
 extern char* __real_getcwd(char* buf, size_t size);
 extern int __real_mkdir(const char* pathname, mode_t mode);
 extern int __real_open(const char* pathname, int flags, mode_t mode);
+extern DIR* __real_opendir(const char* name);
+extern struct dirent* __real_readdir(DIR* dirp);
+extern int __real_readdir_r(DIR* dirp, struct dirent* entry,
+                            struct dirent** result);
 extern ssize_t __real_readlink(const char* path, char* buf, size_t bufsiz);
 extern char* __real_realpath(const char* path, char* resolved_path);
 extern int __real_remove(const char* pathname);
 extern int __real_rename(const char* oldpath, const char* newpath);
+extern void __real_rewinddir(DIR* dirp);
 extern int __real_rmdir(const char* pathname);
+extern int __real_scandir(
+    const char* dirp, struct dirent*** namelist,
+    int (*filter)(const struct dirent*),
+    int (*compar)(const struct dirent**, const struct dirent**));
 extern int __real_stat(const char* filename, struct stat* buf);
 extern int __real_statfs(const char* filename, struct statfs* buf);
 extern int __real_statvfs(const char* filename, struct statvfs* buf);
@@ -272,8 +303,8 @@ using arc::VirtualFileSystemInterface;
 
 int __wrap_access(const char* pathname, int mode) {
   ARC_STRACE_ENTER("access", "\"%s\", %s",
-                     SAFE_CSTR(pathname),
-                     arc::GetAccessModeStr(mode).c_str());
+                   SAFE_CSTR(pathname),
+                   arc::GetAccessModeStr(mode).c_str());
   int result;
   VirtualFileSystemInterface* file_system = GetFileSystem();
   if (file_system) {
@@ -313,6 +344,20 @@ int __wrap_chown(const char* path, uid_t owner, gid_t group) {
   ARC_STRACE_RETURN(result);
 }
 
+// Wrap this just for ARC strace.
+int __wrap_closedir(DIR* dirp) {
+  ARC_STRACE_ENTER("closedir", "%d, %p", PRETIFY_DIRP(dirp));
+  int result = __real_closedir(dirp);
+  ARC_STRACE_RETURN(result);
+}
+
+// Wrap this just for ARC strace.
+int __wrap_dirfd(DIR* dirp) {
+  ARC_STRACE_ENTER("dirfd", "%p", dirp);
+  int result = __real_dirfd(dirp);
+  ARC_STRACE_RETURN(result);
+}
+
 int __wrap_dlclose(const void* handle) {
   // TODO(crbug.com/241955): Decipher |handle|
   ARC_STRACE_ENTER("dlclose", "%p", handle);
@@ -323,22 +368,24 @@ int __wrap_dlclose(const void* handle) {
 
 void* __wrap_dlopen(const char* filename, int flag) {
   ARC_STRACE_ENTER("dlopen", "\"%s\", %s",
-                     SAFE_CSTR(filename),
-                     arc::GetDlopenFlagStr(flag).c_str());
+                   SAFE_CSTR(filename),
+                   arc::GetDlopenFlagStr(flag).c_str());
   void* result = NULL;
   // __real_dlopen is known to be slow under NaCl.
   TRACE_EVENT2(ARC_TRACE_CATEGORY, "wrap_dlopen",
                "filename", TRACE_STR_COPY(SAFE_CSTR(filename)),
                "flag", flag);
-  result = __real_dlopen(filename, flag);
-  if (!result && filename && filename[0] != '/') {
+
+  if (filename && filename[0] != '/' &&
+      arc::IsStaticallyLinkedSharedObject(filename)) {
     // ARC statically links some libraries into the main
     // binary. When an app dlopen such library, we should return the
     // handle of the main binary so that apps can find symbols.
-    if (arc::IsStaticallyLinkedSharedObject(filename)) {
-      result = __real_dlopen(NULL, flag);
-    }
+    result = __real_dlopen(NULL, flag);
+  } else {
+    result = __real_dlopen(filename, flag);
   }
+
   // false since dlopen never sets errno.
   ARC_STRACE_RETURN_PTR(result, false);
 }
@@ -346,11 +393,18 @@ void* __wrap_dlopen(const char* filename, int flag) {
 void* __wrap_dlsym(const void* handle, const char* symbol) {
   // TODO(crbug.com/241955): Decipher |handle|
   ARC_STRACE_ENTER("dlsym", "%s, \"%s\"",
-                     arc::GetDlsymHandleStr(handle).c_str(),
-                     SAFE_CSTR(symbol));
+                   arc::GetDlsymHandleStr(handle).c_str(),
+                   SAFE_CSTR(symbol));
   void* result = __real_dlsym(handle, symbol);
   // false since dlsym never sets errno.
   ARC_STRACE_RETURN_PTR(result, false);
+}
+
+// Wrap this just for ARC strace.
+DIR* __wrap_fdopendir(int fd) {
+  ARC_STRACE_ENTER_FD("fdopendir", "%d", fd);
+  DIR* dirp = __real_fdopendir(fd);
+  ARC_STRACE_RETURN_PTR(dirp, !dirp);
 }
 
 char* __wrap_getcwd(char* buf, size_t size) {
@@ -365,19 +419,25 @@ char* __wrap_getcwd(char* buf, size_t size) {
   ARC_STRACE_RETURN_PTR(result, false);
 }
 
-int __wrap_getdents(
-    unsigned int fd, struct dirent* dirp, unsigned int count) {
-  ARC_STRACE_ENTER_FD("getdents", "%d, %p, %u", fd, dirp, count);
+extern "C" {
+IRT_WRAPPER(getdents, int fd, struct dirent* dirp, size_t count,
+            size_t* nread) {
+  // We intentionally use Bionic's dirent instead of NaCl's. See
+  // bionic/libc/arch-nacl/syscalls/getdents.c for detail.
+  ARC_STRACE_ENTER_FD("getdents", "%d, %p, %u, %p", fd, dirp, count, nread);
   int result = -1;
   VirtualFileSystemInterface* file_system = GetFileSystem();
   if (file_system)
     result = file_system->getdents(fd, dirp, count);
   else
     errno = ENOSYS;
-  ARC_STRACE_RETURN(result);
+  if (result >= 0) {
+    *nread = result;
+    ARC_STRACE_REPORT("nread=\"%zu\"", *nread);
+  }
+  ARC_STRACE_RETURN(result >= 0 ? 0 : errno);
 }
 
-extern "C" {
 IRT_WRAPPER(getcwd, char* buf, size_t size) {
   return __wrap_getcwd(buf, size) ? 0 : errno;
 }
@@ -385,7 +445,7 @@ IRT_WRAPPER(getcwd, char* buf, size_t size) {
 
 int __wrap_lstat(const char* path, struct stat* buf) {
   ARC_STRACE_ENTER("lstat", "\"%s\", %p",
-                     SAFE_CSTR(path), buf);
+                   SAFE_CSTR(path), buf);
   int result;
   VirtualFileSystemInterface* file_system = GetFileSystem();
   if (file_system) {
@@ -558,8 +618,8 @@ int __wrap_open(const char* pathname, int flags, ...) {
   va_end(argp);
 
   ARC_STRACE_ENTER("open", "\"%s\", %s, 0%o",
-                     SAFE_CSTR(pathname),
-                     arc::GetOpenFlagStr(flags).c_str(), mode);
+                   SAFE_CSTR(pathname),
+                   arc::GetOpenFlagStr(flags).c_str(), mode);
   int fd = -1;
   VirtualFileSystemInterface* file_system = GetFileSystem();
   if (file_system)
@@ -574,9 +634,31 @@ int __wrap_open(const char* pathname, int flags, ...) {
   ARC_STRACE_RETURN(fd);
 }
 
+// Wrap this just for ARC strace.
+DIR* __wrap_opendir(const char* name) {
+  ARC_STRACE_ENTER("opendir", "%s", SAFE_CSTR(name));
+  DIR* dirp = __real_opendir(name);
+  ARC_STRACE_RETURN_PTR(dirp, !dirp);
+}
+
+// Wrap this just for ARC strace.
+struct dirent* __wrap_readdir(DIR* dirp) {
+  ARC_STRACE_ENTER_FD("readdir", "%d, %p", PRETIFY_DIRP(dirp));
+  struct dirent* ent = __real_readdir(dirp);
+  ARC_STRACE_RETURN_PTR(ent, false);
+}
+
+// Wrap this just for ARC strace.
+int __wrap_readdir_r(DIR* dirp, struct dirent* entry, struct dirent** ents) {
+  ARC_STRACE_ENTER_FD("readdir_r", "%d, %p, %p, %p",
+                      PRETIFY_DIRP(dirp), entry, ents);
+  int result = __real_readdir_r(dirp, entry, ents);
+  ARC_STRACE_RETURN(result);
+}
+
 ssize_t __wrap_readlink(const char* path, char* buf, size_t bufsiz) {
   ARC_STRACE_ENTER("readlink", "\"%s\", %p, %zu",
-                     SAFE_CSTR(path), buf, bufsiz);
+                   SAFE_CSTR(path), buf, bufsiz);
   ssize_t result;
   VirtualFileSystemInterface* file_system = GetFileSystem();
   if (file_system)
@@ -620,7 +702,7 @@ int __wrap_remove(const char* pathname) {
 
 int __wrap_rename(const char* oldpath, const char* newpath) {
   ARC_STRACE_ENTER("rename", "\"%s\", \"%s\"",
-                     SAFE_CSTR(oldpath), SAFE_CSTR(newpath));
+                   SAFE_CSTR(oldpath), SAFE_CSTR(newpath));
   int result;
   VirtualFileSystemInterface* file_system = GetFileSystem();
   if (file_system)
@@ -632,6 +714,24 @@ int __wrap_rename(const char* oldpath, const char* newpath) {
             SAFE_CSTR(oldpath), SAFE_CSTR(newpath),
             safe_strerror(errno).c_str());
   }
+  ARC_STRACE_RETURN(result);
+}
+
+// Wrap this just for ARC strace.
+void __wrap_rewinddir(DIR* dirp) {
+  ARC_STRACE_ENTER_FD("rewinddir", "%d, %p", PRETIFY_DIRP(dirp));
+  __real_rewinddir(dirp);
+  ARC_STRACE_RETURN_VOID();
+}
+
+// Wrap this just for ARC strace.
+int __wrap_scandir(
+    const char* dirp, struct dirent*** namelist,
+    int (*filter)(const struct dirent*),
+    int (*compar)(const struct dirent**, const struct dirent**)) {
+  ARC_STRACE_ENTER("scandir", "%s, %p, %p, %p",
+                   SAFE_CSTR(dirp), namelist, filter, compar);
+  int result = __real_scandir(dirp, namelist, filter, compar);
   ARC_STRACE_RETURN(result);
 }
 
@@ -690,6 +790,22 @@ int __wrap_statvfs(const char* pathname, struct statvfs* stat) {
   ARC_STRACE_RETURN(result);
 }
 
+int __wrap_symlink(const char* oldp, const char* newp) {
+  ARC_STRACE_ENTER("symlink", "\"%s\", \"%s\"",
+                   SAFE_CSTR(oldp), SAFE_CSTR(newp));
+  int result;
+  VirtualFileSystemInterface* file_system = GetFileSystem();
+  if (file_system) {
+    result = file_system->symlink(oldp, newp);
+  } else {
+    errno = EPERM;
+    result = -1;
+  }
+  if (!result)
+    ALOGE("Added a non-persistent symlink from %s to %s", newp, oldp);
+  ARC_STRACE_RETURN(result);
+}
+
 // TODO(crbug.com/350800): Reenable 'tmpfile_fileno_fprintf_rewind_fgets' Bionic
 // CTS to test this function.
 // TODO(crbug.com/339717): We should do either of the following: (1) Use IRT
@@ -714,7 +830,7 @@ FILE* __wrap_tmpfile() {
 template <typename OffsetType>
 static int TruncateImpl(const char* pathname, OffsetType length) {
   ARC_STRACE_ENTER("truncate", "\"%s\", %lld",
-                     SAFE_CSTR(pathname), static_cast<int64_t>(length));
+                   SAFE_CSTR(pathname), static_cast<int64_t>(length));
   int result = -1;
   VirtualFileSystemInterface* file_system = GetFileSystem();
   if (file_system)
@@ -858,7 +974,7 @@ int __wrap_dup2(int oldfd, int newfd) {
 int __wrap_fcntl(int fd, int cmd, ...) {
   // TODO(crbug.com/241955): Support variable args?
   ARC_STRACE_ENTER_FD("fcntl", "%d, %s, ...",
-                        fd, arc::GetFcntlCommandStr(cmd).c_str());
+                      fd, arc::GetFcntlCommandStr(cmd).c_str());
   int result = -1;
   VirtualFileSystemInterface* file_system = GetFileSystem();
 
@@ -902,7 +1018,7 @@ int __wrap_flock(int fd, int operation) {
   // - App instance and Dexopt instance of an app do not access the file system
   //   at the same time.
   ARC_STRACE_ENTER_FD("flock", "%d, %s",
-                        fd, arc::GetFlockOperationStr(operation).c_str());
+                      fd, arc::GetFlockOperationStr(operation).c_str());
   ARC_STRACE_REPORT("not implemented, always succeeds");
   ARC_STRACE_RETURN(0);
 }
@@ -929,7 +1045,7 @@ IRT_WRAPPER(fstat, int fd, struct nacl_abi_stat *buf) {
 template <typename OffsetType>
 static int FtruncateImpl(int fd, OffsetType length) {
   ARC_STRACE_ENTER_FD("ftruncate", "%d, %lld",
-                        fd, static_cast<int64_t>(length));
+                      fd, static_cast<int64_t>(length));
   int result;
   VirtualFileSystemInterface* file_system = GetFileSystem();
   if (file_system)
@@ -952,8 +1068,9 @@ int __wrap_ftruncate64(int fd, off64_t length) {
 }
 
 int __wrap_ioctl(int fd, int request, ...) {
-  // TODO(crbug.com/241955): Support |request| constants and variable args?
-  ARC_STRACE_ENTER_FD("ioctl", "%d, %d, ...", fd, request);
+  // TODO(crbug.com/241955): Pretty-print variable args?
+  ARC_STRACE_ENTER_FD("ioctl", "%d, %s, ...",
+                      fd, arc::GetIoctlRequestStr(request).c_str());
   int result = -1;
   va_list ap;
   va_start(ap, request);
@@ -971,8 +1088,8 @@ int __wrap_ioctl(int fd, int request, ...) {
 template <typename OffsetType>
 static OffsetType LseekImpl(int fd, OffsetType offset, int whence) {
   ARC_STRACE_ENTER_FD("lseek", "%d, %lld, %s",
-                        fd, static_cast<int64_t>(offset),
-                        arc::GetLseekWhenceStr(whence).c_str());
+                      fd, static_cast<int64_t>(offset),
+                      arc::GetLseekWhenceStr(whence).c_str());
   OffsetType result;
   VirtualFileSystemInterface* file_system = GetFileSystem();
   if (file_system)
@@ -1062,7 +1179,7 @@ void* __wrap_mmap(
 
 int __wrap_mprotect(const void* addr, size_t len, int prot) {
   ARC_STRACE_ENTER("mprotect", "%p, %zu(0x%zx), %s", addr, len, len,
-                     arc::GetMmapProtStr(prot).c_str());
+                   arc::GetMmapProtStr(prot).c_str());
 #if defined(__native_client__)
   // PROT_EXEC mprotect is not allowed on NaCl, where all executable
   // pages are validated through special APIs.
@@ -1101,7 +1218,7 @@ int __wrap_mprotect(const void* addr, size_t len, int prot) {
 int __wrap_munmap(void* addr, size_t length) {
   ARC_STRACE_ENTER("munmap", "%p, %zu(0x%zx)", addr, length, length);
   ARC_STRACE_REPORT("RANGE (%p-%p)",
-                      addr, reinterpret_cast<char*>(addr) + length);
+                    addr, reinterpret_cast<char*>(addr) + length);
   int result = -1;
   VirtualFileSystemInterface* file_system = GetFileSystem();
   const int errno_orig = errno;
@@ -1125,7 +1242,7 @@ int __wrap_munmap(void* addr, size_t length) {
 int __wrap_poll(struct pollfd* fds, nfds_t nfds, int timeout) {
   // TODO(crbug.com/241955): Stringify |fds|?
   ARC_STRACE_ENTER("poll", "%p, %lld, %d",
-                     fds, static_cast<int64_t>(nfds), timeout);
+                   fds, static_cast<int64_t>(nfds), timeout);
   int result;
   VirtualFileSystemInterface* file_system = GetFileSystem();
   if (file_system)
@@ -1142,7 +1259,7 @@ int __wrap_poll(struct pollfd* fds, nfds_t nfds, int timeout) {
 template <typename OffsetType>
 static ssize_t PreadImpl(int fd, void* buf, size_t count, OffsetType offset) {
   ARC_STRACE_ENTER_FD("pread", "%d, %p, %zu, %lld",
-                        fd, buf, count, static_cast<int64_t>(offset));
+                      fd, buf, count, static_cast<int64_t>(offset));
   ssize_t result;
   VirtualFileSystemInterface* file_system = GetFileSystem();
   if (file_system)
@@ -1171,7 +1288,7 @@ template <typename OffsetType>
 static ssize_t PwriteImpl(int fd, const void* buf, size_t count,
                           OffsetType offset) {
   ARC_STRACE_ENTER_FD("pwrite", "%d, %p, %zu, %lld",
-                        fd, buf, count, static_cast<int64_t>(offset));
+                      fd, buf, count, static_cast<int64_t>(offset));
   ssize_t result;
   VirtualFileSystemInterface* file_system = GetFileSystem();
   if (file_system)
@@ -1474,6 +1591,7 @@ void InitIRTHooks() {
   DO_WRAP(close);
   DO_WRAP(fstat);
   DO_WRAP(getcwd);
+  DO_WRAP(getdents);
   DO_WRAP(open);
   DO_WRAP(read);
   DO_WRAP(seek);

@@ -17,6 +17,9 @@
 #include <irt_syscalls.h>
 #include <nacl_fcntl.h>
 
+#define STATIC_ASSERT(cond, name) \
+  struct StaticAssert_ ## name { char name[(cond) ? 1 : -1]; }
+
 int __open(const char *filename, int flags, int mode) {
   int newfd;
   int nacl_flags = 0;
@@ -52,6 +55,19 @@ int __open(const char *filename, int flags, int mode) {
     nacl_flags |= NACL_ABI_O_NDELAY;
   if ((flags & O_SYNC))
     nacl_flags |= NACL_ABI_O_SYNC;
+  // NaCl ABI does not define O_DIRECTORY but we need to pass this
+  // flag to posix_translation. As ARC's IRT hooks passes through most
+  // oflags, we set Bionic's O_DIRECTORY here. Note O_DIRECTORY does
+  // not conflict with other NACL_ABI_O_*. The maximum value of
+  // NACL_ABI_O_* is 0020000 and O_DIRECTORY is 0040000 on ARM and
+  // 0200000 on other CPUs.
+#if defined(__arm__)
+  STATIC_ASSERT(O_DIRECTORY == 0040000, Value_of_O_DIRECTORY);
+#else
+  STATIC_ASSERT(O_DIRECTORY == 0200000, Value_of_O_DIRECTORY);
+#endif
+  if ((flags & O_DIRECTORY))
+    nacl_flags |= O_DIRECTORY;
   // Bionic does not have O_ASYNC.
 
   result = __nacl_irt_open(filename, nacl_flags, mode, &newfd);

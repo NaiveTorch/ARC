@@ -16,9 +16,9 @@ from string import Template
 _MAXIMUM_COPYRIGHT_PATTERN_LINES = 7
 
 _CHROMIUM_PATTERN = r"""
-.* Copyright( \(c\))? (20\d\d) The Chromium .*Authors. All rights reserved.
+.* Copyright( \(c\))? (20\d\d) The Chromium (.*)Authors. All rights reserved.
 .* Use of this source code is governed by a BSD-style license that can be
-.* found in the LICENSE file.
+.* found in the LICENSE file..*
 """.lstrip()
 
 _CHROMIUM_CANONICAL = """
@@ -64,8 +64,8 @@ def _expand_canonical(canonical, ext, long_slash_star):
   elif ext in ['.gypi', '.py']:
     outlines = ['#' + l for l in lines]
   elif ext in ['.css', '.html']:
-    outlines = (['<!--' + lines[0]] + ['  --' + l for l in lines[1:-1]] +
-                ['  --' + lines[-1] + ' -->'])
+    outlines = (['<!--' + lines[0]] + ['    ' + l for l in lines[1:-1]] +
+                ['    ' + lines[-1] + ' -->'])
   else:
     sys.exit('Unknown comment style for file with ext ' + ext)
   return ''.join([l + '\n' for l in outlines])
@@ -77,14 +77,8 @@ def main():
     name, ext = os.path.splitext(file_name)
 
     long_slash_star = False
-    if (basename in ['__init__.py', 'DEPS', 'LICENSE', 'OPEN_SOURCE',
-                     'OWNERS', 'NOTICE'] or
-        basename.startswith('DEPS.') or
-        basename.startswith('MODULE_LICENSE_')):
-      # Ignore these metadata files.
-      return 0
-    if ext in ['.gz', '.so', '.txt'] or basename == 'README':
-      # Ignore committed binary and text files.
+    if (basename == '__init__.py'):
+      # __init__.py files do not need copyrights headers
       return 0
     if (basename == 'config.py' or
         file_name.startswith('canned/') or
@@ -133,7 +127,10 @@ def main():
         return 1
       if pattern == _CHROMIUM_PATTERN:
         # For Chromium copyright, make sure (c) is not used after 2014.
-        if m.group(1) and int(m.group(2)) >= 2014:
+        has_pseudo_c_symbol = m.group(1)
+        is_2014_or_newer = int(m.group(2)) >= 2014
+        is_chromium_os = m.group(3).find('OS') != -1
+        if has_pseudo_c_symbol and is_2014_or_newer and not is_chromium_os:
           print ('(c) should not be put in new copyright headers:\n\n%s' %
                  header)
           return 1

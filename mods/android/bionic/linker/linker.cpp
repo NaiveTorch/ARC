@@ -1035,14 +1035,6 @@ static soinfo* load_library(const char* name) {
       si->entry = header.e_entry + elf_reader.load_bias();
     if (!si->phdr)
       DL_ERR("Cannot locate a program header in \"%s\".", name);
-
-    // Set is_ndk appropriately. NDK libraries in APKs are in
-    // /data/app-lib/<app-name>.
-#if defined(USE_NDK_DIRECT_EXECUTION)
-    const char kNdkLibraryDir[] = "/data/app-lib/";
-    si->is_ndk = (!strncmp(name, kNdkLibraryDir, sizeof(kNdkLibraryDir) - 1) ||
-                  !strncmp(name, kVendorLibDir, sizeof(kVendorLibDir) - 1));
-#endif
 #endif
     // ARC MOD END
     return si;

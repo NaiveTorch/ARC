@@ -24,6 +24,8 @@ LAUNCH_CHROME_FLAKE_RETRY_COUNT = 3
 # This is the minimum line count that is required to consider Chrome to have
 # launched correctly.
 _LAUNCH_CHROME_MINIMUM_LINES = 16
+# CRX directories used by system mode should have this prefix.
+SYSTEM_MODE_PREFIX = 'system_mode.'
 
 
 class TimeoutError(Exception):
@@ -150,6 +152,7 @@ class SuiteRunnerBase(object):
     self._output_filename = None
     self._xvfb_output_filename = None
     self._subprocess = None
+    self._user_data_dir = None
 
   def _ensure_test_method_details(self):
     if not self._suite_test_expectations:
@@ -186,6 +189,10 @@ class SuiteRunnerBase(object):
   def terminated(self):
     return self._terminated
 
+  @property
+  def user_data_dir(self):
+    return self._user_data_dir
+
   def _set_suite_test_expectations(self, suite_test_expectations):
     # Propagate flags set at the suite level to all the tests contained within
     # (FLAKY, LARGE, etc). Note that the suite expectation must be first to
@@ -214,40 +221,6 @@ class SuiteRunnerBase(object):
   def bug(self):
     """Returns the bug url(s) associated with this suite."""
     return self._bug
-
-  def has_test_method_details(self):
-    """Returns true if this suite runner knows what test methods will be run.
-
-    This is overridden by the actual implementations which have these
-    details."""
-    return True
-
-  def get_test_method_expectation_counts(self):
-    """Returns a dictionary mapping expectations to method counts.
-
-    The keys of the dictionary are the lowercase letters p (for passing tests),
-    f (for failing tests), and s (for skipped tests).
-
-    It is the responsibility of any override to count all test methods as
-    skipped if the suite itself will be skipped.
-    """
-    self._ensure_test_method_details()
-    # We return a simple dictionary of pass/fail/skipped test method counts.
-    details = dict(p=0, f=0, s=0)
-    # Determine if the suite as a whole is skipped, as that affects how we
-    # should count each test.
-    is_suite_skipped = self.suite_expectation.should_not_run
-    does_suite_fail = self.expect_failure
-    for name, expectation in self._suite_test_expectations.iteritems():
-      # Depending on what we expect to happen, adjust the count for the
-      # appropriate bucket.
-      if not expectation.should_include_by_default or is_suite_skipped:
-        details['s'] += 1
-      elif FAIL in expectation or does_suite_fail:
-        details['f'] += 1
-      else:
-        details['p'] += 1
-    return details
 
   def check_test_runnable(self):
     if self._flags.should_not_run:
@@ -355,8 +328,11 @@ class SuiteRunnerBase(object):
     name = name_override if name_override else self._name
     args.extend(['--crx-name-override=' + name,
                  '--noninja',
-                 '--use-temporary-data-dirs',
                  '--disable-sleep-on-blur'])
+    if self._user_data_dir:
+      args.append('--user-data-dir=' + self._user_data_dir)
+    else:
+      args.append('--use-temporary-data-dirs')
 
     # Force software GPU emulation mode when running tests under Xvfb.
     if self._args.enable_osmesa or self._args.use_xvfb:
@@ -376,10 +352,14 @@ class SuiteRunnerBase(object):
 
     return args + additional_args
 
-  def get_system_mode_launch_chrome_command(self, name, additional_args=[]):
-    return self.get_launch_chrome_command(['--stderr-log=I'] + additional_args,
-                                          mode='system',
-                                          name_override='system_mode.' + name)
+  def get_system_mode_launch_chrome_command(self, name, additional_args=None):
+    additional_args = build_common.as_list(additional_args)
+    return self.get_launch_chrome_command(
+        # We need --stderr-log=I as we will use ALOGI output from
+        # AdbService. See _ADB_SERVICE_PATTERN in system_mode.py.
+        ['--stderr-log=I'] + additional_args,
+        mode='system',
+        name_override=SYSTEM_MODE_PREFIX + name)
 
   def _get_subprocess_output(self):
     output = ''

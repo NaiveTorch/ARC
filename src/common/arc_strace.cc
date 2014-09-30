@@ -10,6 +10,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <inttypes.h>
+#include <linux/sync.h>  // SYNC_IOC_*
 #include <nacl_stat.h>
 #include <netinet/in.h>
 #include <pthread.h>
@@ -17,6 +18,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/ioctl.h>
 #include <sys/mman.h>
 #include <sys/select.h>
 #include <sys/socket.h>
@@ -925,6 +927,28 @@ std::string GetFcntlCommandStr(int cmd) {
   return result;
 }
 
+std::string GetIoctlRequestStr(int request) {
+  std::string result;
+  switch (request) {
+    CASE_APPEND_ENUM_STR(FIONREAD, result);
+    default: {
+      // Unable to write switch-case since bionic ioctl.h enables _IOC_TYPECHECK
+      // which is not allowed in constant expression.
+      const unsigned int urequest = static_cast<unsigned int>(request);
+      if (urequest == SYNC_IOC_WAIT) {
+        AppendResult("SYNC_IOC_WAIT", &result);
+      } else if (urequest == SYNC_IOC_MERGE) {
+        AppendResult("SYNC_IOC_MERGE", &result);
+      } else if (urequest == SYNC_IOC_FENCE_INFO) {
+        AppendResult("SYNC_IOC_FENCE_INFO", &result);
+      } else {
+        AppendResult(base::StringPrintf("%d???", request), &result);
+      }
+    }
+  }
+  return result;
+}
+
 std::string GetRWBufStr(const void* buf, size_t count) {
   static const size_t kStrSizeMax = 32;
   const char* str = static_cast<const char*>(buf);
@@ -969,6 +993,7 @@ std::string GetPPErrorStr(int32_t err) {
     CASE_APPEND_ENUM_STR(PP_ERROR_NOTSUPPORTED, result);
     CASE_APPEND_ENUM_STR(PP_ERROR_BLOCKS_MAIN_THREAD, result);
     CASE_APPEND_ENUM_STR(PP_ERROR_FILENOTFOUND, result);
+    CASE_APPEND_ENUM_STR(PP_ERROR_FILEEXISTS, result);
     CASE_APPEND_ENUM_STR(PP_ERROR_FILETOOBIG, result);
     CASE_APPEND_ENUM_STR(PP_ERROR_FILECHANGED, result);
     CASE_APPEND_ENUM_STR(PP_ERROR_NOTAFILE, result);
@@ -990,7 +1015,7 @@ std::string GetPPErrorStr(int32_t err) {
     CASE_APPEND_ENUM_STR(PP_ERROR_MESSAGE_TOO_BIG, result);
     CASE_APPEND_ENUM_STR(PP_ERROR_NAME_NOT_RESOLVED, result);
     default:
-      result = "???";
+      result = base::StringPrintf("%d???", err);
   }
   return result;
 }

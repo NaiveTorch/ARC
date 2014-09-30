@@ -73,7 +73,10 @@ class SWRendererInterface {
 
 // Opaque type of GPU context pointers.
 struct ContextGPU;
+
+namespace compositor {
 class CompositorInterface;
+}  // namespace compositor
 
 class GPURendererInterface {
  public:
@@ -98,7 +101,7 @@ class GPURendererInterface {
   // Check whether a SwapBuffers callback is pending.
   virtual bool IsSwapBuffersOutstanding() = 0;
   virtual bool SwapBuffersGraphics3D(ContextGPU* context) = 0;
-  virtual CompositorInterface* GetCompositor() = 0;
+  virtual compositor::CompositorInterface* GetCompositor() = 0;
 };
 
 class AudioManagerInterface {
@@ -220,6 +223,8 @@ class VideoDecoderInterface {
   // functions sequentially, from a single thread, without recursion
   // from a decoder call.
   struct Client {
+    virtual ~Client() {}
+
     // Invoked when the decoder has been disabled. No more callback functions
     // will be invoked for the corresponding decoder.
     // The implementer is responsible for deleting this Client instance.

@@ -10,7 +10,6 @@
 #
 
 import re
-import subprocess
 
 import ninja_generator
 import ninja_generator_runner
@@ -19,10 +18,6 @@ from ninja_generator import ArchiveNinjaGenerator
 from ninja_generator import ExecNinjaGenerator
 from ninja_generator import TestNinjaGenerator
 from ninja_generator import CNinjaGenerator
-
-
-def _run_pkg_config(args):
-  return subprocess.check_output(['pkg-config'] + args).strip()
 
 
 def _remove_isystem(flags):

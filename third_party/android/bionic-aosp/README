@@ -1,0 +1,11 @@
+TODO(crbug.com/406226): Remove this directory once ARC is rebased to L.
+
+This directory contains newer Bionic sources from AOSP master.
+We partially use modified version of them, and these modified files track
+files in this directory.
+
+- libc/include/locale.h
+- libc/include/xlocale.h
+
+They are from AOSP Bionic (https://android.googlesource.com/platform/bionic),
+and the revision is 001815ed197280409d08e9622890e7462c6e6831

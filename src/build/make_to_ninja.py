@@ -332,6 +332,7 @@ printvars:
 
 def _create_main_makefile(file_name, extra_env_vars):
   _ENV_VARS = {
+      'ANDROID_BUILD_TOP': _ARC_ROOT,
       # TODO(crbug.com/233769): Renderscript is not enabled.
       'ANDROID_ENABLE_RENDERSCRIPT': 'false',
       # For art
@@ -600,7 +601,6 @@ def prepare_make_to_ninja():
       # but for now only the BitWriter module is built and it does not need
       # the real clang.mk. Remove this to avoid makefile hacks as possible.
       '../../external/clang/clang.mk',
-      '../../external/libcxx/libcxx.mk',
       'droiddoc.mk',  # Not supported
       'dumpvar.mk',  # No spam
       'executable_prefer_symlink.mk',  # backported from L
@@ -619,6 +619,13 @@ def prepare_make_to_ninja():
   _create_print_vars_makefile(BUILD_TYPE_NOTICES_STATIC)
   _create_print_vars_makefile(BUILD_TYPE_PREBUILT)
   _copy_build_scripts()
+  # TODO(crbug.com/409511): Now libcxx is supported only for Bare Metal i686.
+  # libcxx seriously depends on C++11 that NaCl gcc does not support.
+  # We will use PNaCl partially to build libcxx.
+  if OPTIONS.is_bare_metal_i686():
+    _copy_external_files(['external/libcxx/libcxx.mk'])
+  else:
+    _create_noop_makefiles(['../../external/libcxx/libcxx.mk'])
   _copy_external_file('build/tools/findleaves.py')
   _copy_canned_generated_sources()
   _create_tool_scripts()
@@ -974,11 +981,13 @@ class MakeVars:
       self._convert_host_to_target()
 
     self._is_clang_enabled = False
+    self._is_stlport_enabled = True
 
     self._cflags = self._get_build_flags(vars_helper, 'CFLAGS')
     # For consistency with NinjaGenerator, call it cxxflags rather than
     # cppflags.
     self._cxxflags = self._get_build_flags(vars_helper, 'CPPFLAGS')
+    self._clangflags = self._get_build_flags(vars_helper, 'CLANG_FLAGS')
     self._asmflags = vars_helper.get_optional_flags('LOCAL_ASFLAGS')
 
     self._ldflags = self._get_build_flags(vars_helper, 'LDFLAGS')
@@ -1023,8 +1032,9 @@ class MakeVars:
     gen_sources = vars_helper.get_optional_list('LOCAL_GENERATED_SOURCES')
 
     self._sources = []
-    self._sources += (os.path.join(self._path, x)
-                      for x in local_sources if not x.endswith('.h'))
+    # .ipp is a header file that implements inline template methods.
+    self._sources += (os.path.join(self._path, x) for x in local_sources if
+                      not x.endswith('.h') and not x.endswith('.ipp'))
     self._sources += (x for x in gen_sources if not x.endswith('.h'))
 
     self._static_deps = vars_helper.get_optional_list('LOCAL_STATIC_LIBRARIES')
@@ -1034,12 +1044,24 @@ class MakeVars:
     self._addld_deps = []
 
     self._implicit_deps = []
+    self._implicit_deps += (os.path.join(self._path, x) for x in local_sources
+                            if x.endswith('.h') or x.endswith('.ipp'))
 
     self._copy_headers = vars_helper.get_optional_flags('LOCAL_COPY_HEADERS')
     self._copy_headers_to = vars_helper.get_optional('LOCAL_COPY_HEADERS_TO')
     if self._copy_headers_to:
       self._copy_headers_to = os.path.join(_INTERMEDIATE_HEADERS_DIR,
                                            self._copy_headers_to)
+
+    if self._cflags.count('-D_USING_LIBCXX'):
+      self._is_stlport_enabled = False
+      # TODO(crbug.com/406226): Remove following workaround that provide missing
+      # features that are added in AOSP master and L, and needed to use libc++.
+      # '-D_USING_LIBCXX' flag is added by android/external/libcxx/libcxx.mk.
+      # This is the makefile that modules using libc++ include.
+      self._cflags.extend(['-include', 'external/libcxx/aosp_bionic_compat.h'])
+      self._clangflags.extend(
+          ['-include', 'external/libcxx/aosp_bionic_compat.h'])
 
     # TODO(igorc): Maybe support LOCAL_SYSTEM_SHARED_LIBRARIES
 
@@ -1285,9 +1307,15 @@ class MakeVars:
     assert self.is_c_library() or self.is_executable()
     return self._is_clang_enabled
 
+  # TODO(crbug.com/415511): Let make_to_ninja detect clang ready
+  # modules automatically and do not expose this function to filters.
   def enable_clang(self):
     assert self.is_c_library() or self.is_executable()
-    self._is_clang_enabled = True
+    assert self._cflags == self._orig_cflags, (
+        'enable_clang() must be called before modifying cflags')
+    if toolchain.has_clang(OPTIONS.target(), self.is_host()):
+      self._cflags = self._clangflags
+      self._is_clang_enabled = True
 
   def is_logtag_emission_enabled(self):
     return self._is_logtag_emission_enabled
@@ -1390,6 +1418,8 @@ class MakeVars:
       self._cflags.remove(flag)
     while flag in self._cxxflags:
       self._cxxflags.remove(flag)
+    while flag in self._clangflags:
+      self._clangflags.remove(flag)
 
   def _check_c_archive(self):
     if not self.is_static():
@@ -1571,6 +1601,7 @@ def _generate_c_ninja(vars, out_lib_deps):
   extra_args['notices_only'] = vars.is_notices()
 
   if vars.is_shared() or vars.is_target_executable():
+    extra_args['link_stlport'] = vars._is_stlport_enabled
     n = SharedObjectNinjaGenerator(vars.get_module_name(), host=vars.is_host(),
                                    **extra_args)
   elif vars.is_host_executable():
@@ -1785,11 +1816,15 @@ def _substitute_android_config_include(vars):
     if not vars.is_host() and OPTIONS.is_arm():
       header_name = '/linux-arm/AndroidConfig.h'
 
-  cflags = list(vars.get_cflags())
-  for i in xrange(len(cflags)):
-    if cflags[i] == '-include' and cflags[i + 1].endswith(header_name):
-      cflags[i + 1] = build_common.get_android_config_header(vars.is_host())
-  vars.get_cflags()[:] = cflags
+  # TODO(crbug.com/415511): Let make_to_ninja detect clang ready
+  # modules automatically. Once this has been done, we should be able
+  # to set vars._cflags using TARGET_GLOBAL_CLANG_FLAGS when we
+  # initializes MakeVars objects, and remove vars._clangflags. Then,
+  # we need to adjust only vars._cflags here.
+  for flags in [vars._cflags, vars._clangflags]:
+    for i in xrange(len(flags) - 1):
+      if flags[i] == '-include' and flags[i + 1].endswith(header_name):
+        flags[i + 1] = build_common.get_android_config_header(vars.is_host())
 
 
 def _remove_feature_flags(vars):
@@ -1836,8 +1871,8 @@ def _remove_feature_flags(vars):
 
 
 def _adjust_arm_flags(vars):
-  vars.get_cflags().remove('-march=armv7-a')  # we use -mcpu= instead.
-  vars.get_cflags().remove('-mfpu=vfpv3-d16')  # we use -mfpu=neon instead.
+  vars.remove_c_or_cxxflag('-march=armv7-a')  # we use -mcpu= instead.
+  vars.remove_c_or_cxxflag('-mfpu=vfpv3-d16')  # we use -mfpu=neon instead.
 
   if OPTIONS.is_bare_metal_build():
     # Overwrite -marm flag set in ninja_generator.py if LOCAL_ARM_MODE is set
@@ -1905,6 +1940,12 @@ def _adjust_flags(vars):
   vars.remove_c_or_cxxflag('-D_FORTIFY_SOURCE=1')
   vars.remove_c_or_cxxflag('-D_FORTIFY_SOURCE=2')
   vars.remove_c_or_cxxflag('-D_FORTIFY_SOURCE=3')
+
+  # Keep the original cflags to make sure cflags is not modified
+  # before vars.enable_clang() is called.
+  # TODO(crbug.com/415511): Let make_to_ninja detect clang ready
+  # modules automatically and remove this.
+  vars._orig_cflags = list(vars._cflags)
 
 
 def _clean_c_library_vars(vars):
@@ -2135,10 +2176,6 @@ class MakefileNinjaTranslator:
   def get_out_intermediates(self, module_name):
     self._generate()
     return self._out_intermediates[module_name]
-
-  def get_out_libs(self):
-    self._generate()
-    return self._out_libs
 
   @staticmethod
   def _read_modules(file_name, extra_env_vars, build_as_target_libs):

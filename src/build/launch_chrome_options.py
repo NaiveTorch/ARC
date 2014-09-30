@@ -289,6 +289,12 @@ Native Client Debugging
                                'perftest'),
                       help=argparse.SUPPRESS)
 
+  parser.add_argument('--additional-android-permissions',
+                      metavar='<permisions>',
+                      help='A comma separated list of additional Android'
+                      ' permissions the CRX should declare.',
+                      default=None)
+
   parser.add_argument('--additional-metadata', '-m', default={},
                       type=json.loads,
                       help='Add additional metadata to the crx.')

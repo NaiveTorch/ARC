@@ -385,17 +385,6 @@ def is_no_sandbox_needed(gdb_target_list):
   return False
 
 
-def create_gdb_command_file_for_trusted_plugin():
-  command_file = _create_command_file(
-      _get_xterm_gdb_startup('plugin', 'gdb') + [
-          '-ex', 'set breakpoint pending on',
-          '-ex', 'tbreak pp::CreateModule',
-          '-ex', 'set environment DISPLAY :0.0',
-          '-ex', 'run',
-          '--args', '"$@"'])
-  return command_file.name
-
-
 def get_args_for_stlport_pretty_printers():
   # Disable the system wide gdbinit which may contain pretty printers for
   # other STL libraries such as libstdc++.

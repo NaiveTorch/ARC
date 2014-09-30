@@ -181,7 +181,8 @@ def _generate_chromium_base_test_ninja():
   # Positional parameter of printf in bionic is currently broken.
   # TODO(crbug.com/248851): Fix this.
   exclude.append('StringPrintfTest.PositionalParameters')
-  n.run(n.link(), '--gtest_filter=\'-%s\'' % ':'.join(exclude))
+  n.add_disabled_tests(*exclude)
+  n.run(n.link())
 
 
 def generate_ninjas():

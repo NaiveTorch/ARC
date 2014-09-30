@@ -188,7 +188,7 @@ class PyLinter(Linter):
     return ['src/build/flake8', filename]
 
 
-@Linter.register
+# Class is registered to Linter below
 class CopyrightLinter(Linter):
   NAME = 'copyright'
   _EXTENSION_GROUPS = [_GROUP_PY, _GROUP_CPP, _GROUP_JS, _GROUP_ASM,
@@ -196,14 +196,26 @@ class CopyrightLinter(Linter):
 
   @classmethod
   def should_ignore(cls, file):
+    if super(CopyrightLinter, cls).should_ignore(file):
+        return True
+
     # TODO(crbug.com/411195): Clean up all copyrights so we can turn this on
     # everywhere.  Currently our priority is to have the open sourced
     # copyrights all be consistent.
-    return not open_source.is_open_sourced(file)
+    is_in_src = file.startswith('src/')
+    is_open_sourced = open_source.is_open_sourced(file)
+    return not is_in_src and not is_open_sourced
 
   @classmethod
   def _lint_cmd(cls, filename):
     return ['src/build/check_copyright.py', filename]
+
+
+# CopyrightLinter overrides should_ignore but we still want to use the base
+# class's (Linter's) functionality of only checking files with extensions
+# listed in _EXTENSION_GROUPS. Unfortunately a subclass can not access its
+# superclass with super if it has been decorated.
+Linter.register(CopyrightLinter)
 
 
 @Linter.register

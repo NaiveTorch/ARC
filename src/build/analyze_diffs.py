@@ -327,6 +327,12 @@ class _AnalyzeDiffState(object):
   def run(self):
     diff_lines = diff_files(self._our_path, self._tracking_path)
 
+    # Don't analyze binary files.  This can be used to override images, for
+    # example, to cut down image size.
+    if (len(diff_lines) == 1 and diff_lines[0].startswith('Binary files ') and
+        diff_lines[0].endswith(' differ')):
+      return
+
     self._process_diff_format_lines(diff_lines)
 
     if not self._file_ignored:

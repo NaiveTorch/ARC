@@ -89,6 +89,7 @@ std::string GetFlockOperationStr(int operation);
 std::string GetLseekWhenceStr(int whence);
 std::string GetMremapFlagStr(int flag);
 std::string GetFcntlCommandStr(int cmd);
+std::string GetIoctlRequestStr(int request);
 
 // Pretty printers for struct values.
 std::string GetSockaddrStr(const struct sockaddr* addr);

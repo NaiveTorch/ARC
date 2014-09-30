@@ -21,7 +21,7 @@ struct Options {
 
   void Reset();
 
-  const int GetMinStderrLogPriority() const {
+  int GetMinStderrLogPriority() const {
     return min_stderr_log_priority_;
   }
 
@@ -46,10 +46,6 @@ struct Options {
   // compliant two-letter upper-case characters. This value is optional and can
   // be empty.
   std::string country;
-
-  // Runtime library used in ARC. The default value must be "libdvm.so".
-  // Alternatively, we may use "libart.so".
-  std::string dalvik_vm_lib;
 
   // If true, enable adb support.
   bool enable_adb;

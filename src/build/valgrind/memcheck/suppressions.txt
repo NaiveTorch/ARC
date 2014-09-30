@@ -140,3 +140,22 @@
    fun:_ZN37PluginTest_LoadAllLibrarySymbols_Test8TestBodyEv
    ...
 }
+{
+   # This leak is intentional. See the VirtualFileSystem constructor.
+   libstlport_initialization_in_posix_translation
+   Memcheck:Leak
+   fun:malloc
+   fun:_Znwj
+   fun:_ZN17posix_translation17VirtualFileSystemC1EPN2pp8InstanceEPNS_18ProcessEnvironmentEii
+   ...
+   fun:_ZN7testing8internal38HandleSehExceptionsInMethodIfSupportedINS_4TestEvEET0_PT_MS4_FS3_vEPKc
+   fun:_ZN7testing8internal35HandleExceptionsInMethodIfSupportedINS_4TestEvEET0_PT_MS4_FS3_vEPKc
+   fun:_ZN7testing4Test3RunEv
+   fun:_ZN7testing8TestInfo3RunEv
+   fun:_ZN7testing8TestCase3RunEv
+   fun:_ZN7testing8internal12UnitTestImpl11RunAllTestsEv
+   fun:_ZN7testing8internal38HandleSehExceptionsInMethodIfSupportedINS0_12UnitTestImplEbEET0_PT_MS4_FS3_vEPKc
+   fun:_ZN7testing8internal35HandleExceptionsInMethodIfSupportedINS0_12UnitTestImplEbEET0_PT_MS4_FS3_vEPKc
+   fun:_ZN7testing8UnitTest3RunEv
+   fun:main
+}

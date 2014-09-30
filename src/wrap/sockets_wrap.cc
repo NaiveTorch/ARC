@@ -238,10 +238,13 @@ struct hostent* __wrap_gethostbyname2(const char* hostname, int family) {
 int __wrap_getpeername(int sockfd, struct sockaddr* addr,
                        socklen_t* addrlen) {
   ARC_STRACE_ENTER_FD("getpeername", "%d, %p, %p", sockfd, addr, addrlen);
-  DANGERF("getpeername: sockfd=%d", sockfd);
-  ARC_STRACE_REPORT("not implemented yet");
-  errno = EBADF;
-  ARC_STRACE_RETURN(-1);
+  arc::PluginHandle handle;
+  int result = handle.GetVirtualFileSystem()->getpeername(
+      sockfd, addr, addrlen);
+  if (result == -1 && errno == EINVAL) {
+    DANGER();
+  }
+  ARC_STRACE_RETURN(result);
 }
 
 int __wrap_getsockname(int sockfd, struct sockaddr* addr,

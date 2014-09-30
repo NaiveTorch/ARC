@@ -183,15 +183,6 @@ class ATFInstrumentationResultParser(object):
 
     return False
 
-  def process_text(self, text):
-    """Processes an block of text."""
-    try:
-      for line in text.splitlines():
-        self.process_line(line)
-    except:
-      print text
-      raise
-
   @property
   def run_completed_cleanly(self):
     """True if the instrumentation run completed cleanly."""

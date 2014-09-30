@@ -19,6 +19,7 @@ import build_common
 import filtered_subprocess
 from build_options import OPTIONS
 from util.minidump_filter import MinidumpFilter
+from util.test import unittest_util
 
 
 RUN_UNIT_TEST = 'src/build/util/test/run_unittest.py'
@@ -74,8 +75,8 @@ _INTEGRATION_TEST_FILE_PATTERNS = [
     'third_party/android/cts/tools/vm-tests-tf/src/dot/junit/opcodes/*/*.java',
     'third_party/android/cts/tools/vm-tests-tf/src/dot/junit/verify/*/*.java',
     'third_party/ndk/sources/cxx-stl/stlport/libs/armeabi-v7a/libstlport_shared.so']  # NOQA
-_UNIT_TEST_FILE_PATTERNS = ['out/target/%(target)s/bin',
-                            'out/target/%(target)s/lib',
+_UNIT_TEST_FILE_PATTERNS = ['out/target/%(target)s/lib',
+                            'out/target/%(target)s/posix_translation_fs_images',
                             'out/target/%(target)s/remote_unittest_info']
 
 # Dictionary to cache the result of remote host type auto detection.
@@ -215,6 +216,7 @@ class RemoteExecutor(object):
         # option sets read, write, and execute permissions to all users.
         '--chmod=a=rwx',
         '--copy-links',
+        '--delete',
         '--inplace',
         '--perms',
         '--progress',
@@ -350,14 +352,22 @@ def get_launch_chrome_files_and_directories(parsed_args):
 
 
 def get_integration_test_files_and_directories():
+  all_unittest_executables = unittest_util.get_test_executables(
+      unittest_util.get_all_tests())
   patterns = (_COMMON_FILE_PATTERNS +
               _LAUNCH_CHROME_FILE_PATTERNS +
-              _INTEGRATION_TEST_FILE_PATTERNS)
+              _INTEGRATION_TEST_FILE_PATTERNS +
+              _UNIT_TEST_FILE_PATTERNS +
+              unittest_util.get_nacl_tools() +
+              all_unittest_executables)
   return _expand_target_and_glob(patterns)
 
 
 def get_unit_test_files_and_directories(parsed_args):
-  patterns = _COMMON_FILE_PATTERNS + _UNIT_TEST_FILE_PATTERNS
+  patterns = (_COMMON_FILE_PATTERNS +
+              _UNIT_TEST_FILE_PATTERNS +
+              unittest_util.get_nacl_tools() +
+              unittest_util.get_test_executables(parsed_args.tests))
   return _expand_target_and_glob(patterns)
 
 

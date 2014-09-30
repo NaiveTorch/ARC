@@ -95,11 +95,10 @@ def launch_remote_chrome(parsed_args, argv):
       'launch_remote_chrome is supported only for Chrome OS, Cygwin, and Mac.')
 
 
-def run_remote_unittest(parsed_args, copied_files):
+def run_remote_unittest(parsed_args):
   remote_host_type = remote_executor_util.get_remote_host_type(parsed_args)
   if remote_host_type == 'chromeos':
-    return remote_chromeos_executor.run_remote_unittest(
-        parsed_args, copied_files)
+    return remote_chromeos_executor.run_remote_unittest(parsed_args)
   raise NotImplementedError(
       'run_remote_unittest is only supported for Chrome OS.')
 

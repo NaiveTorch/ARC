@@ -12,6 +12,7 @@ import re
 import sys
 
 import analyze_diffs
+import staging
 from util import color
 
 _DEFAULT_PATHS_TO_SCAN = ['src/', 'mods/', 'canned/scripts/can_android.py',
@@ -213,7 +214,7 @@ def _analyze_file(path, reporter):
   if os.path.abspath(path) == os.path.abspath(__file__):
     return
 
-  tracking_path = analyze_diffs.compute_default_tracking_path(path)
+  tracking_path = staging.get_default_tracking_path(path)
   metadata = AnalyzeFileLevelMetadata()
   Analyzer(metadata).parse(path)
 
@@ -291,18 +292,18 @@ class TodoReporter(object):
   def report_skipping(self, path):
     self._skipped_paths.append(path)
 
-  def puts(self, text, color=None):
-    color.write_ansi_escape(sys.stdout, color, text)
+  def puts(self, text, use_color=None):
+    color.write_ansi_escape(sys.stdout, use_color, text)
 
   def _print_todo(self, todo):
     self.puts('%s(%d): ' % (todo.source_path, todo.source_line),
-              color=color.MAGENTA)
+              use_color=color.MAGENTA)
     if todo.is_nonstandard:
-      self.puts('Nonstandard TODO: ', color=color.RED)
+      self.puts('Nonstandard TODO: ', use_color=color.RED)
     elif (todo.created_timestamp and
           todo.created_timestamp < self._too_old_timestamp):
-      self.puts('[OLD]: ', color=color.RED)
-    self.puts('%s\n' % todo.raw_text.strip(), color=color.GRAY)
+      self.puts('[OLD]: ', use_color=color.RED)
+    self.puts('%s\n' % todo.raw_text.strip(), use_color=color.GRAY)
 
   def _print_todo_list_source_listing(self, todos):
     for todo in todos:
@@ -315,65 +316,61 @@ class TodoReporter(object):
 
   def print_skipped_paths(self):
     for path in self._skipped_paths:
-      self.puts('Skipped %s\n' % path, color=color.YELLOW)
+      self.puts('Skipped %s\n' % path, use_color=color.YELLOW)
 
   def print_nonstandard_todos(self):
     if self._nonstandard:
-      self.puts('Nonstandard TODOs\n', color=color.GREEN)
+      self.puts('Nonstandard TODOs\n', use_color=color.GREEN)
       self._print_todo_list_source_listing(self._nonstandard)
       self.puts('\n')
 
   def print_time_stamped_todos(self):
     if self._timestamped:
-      self.puts('Time-stamped TODOs\n', color=color.GREEN)
+      self.puts('Time-stamped TODOs\n', use_color=color.GREEN)
       self._print_todo_list_source_listing(self._timestamped)
       self.puts('\n')
 
   def print_too_old_todos(self):
     if self._too_old:
-      self.puts('Too-old TODOs\n', color=color.GREEN)
+      self.puts('Too-old TODOs\n', use_color=color.GREEN)
       self._print_todo_list_source_listing(self._too_old)
       self.puts('\n')
 
   def print_owned_todos(self):
     if self._owned:
-      self.puts('Owned TODOs\n', color=color.GREEN)
+      self.puts('Owned TODOs\n', use_color=color.GREEN)
       self._print_todo_list_source_listing(self._owned)
       self.puts('\n')
 
   def print_bug_todos(self):
     if self._bugs:
-      self.puts('Bug TODOs\n', color=color.GREEN)
+      self.puts('Bug TODOs\n', use_color=color.GREEN)
       self._print_todo_list_source_listing(self._bugs)
-      self.puts('\n')
-
-  def print_all_todos(self):
-    if self._todos:
-      self.puts('TODOs:\n', color=color.GREEN)
-      self._print_todo_list_source_listing(self._todos)
       self.puts('\n')
 
   def print_count_by_bug(self):
     if self._count_by_bug:
-      self.puts('Count by bug:\n', color=color.GREEN)
+      self.puts('Count by bug:\n', use_color=color.GREEN)
       self._print_count_by_dict(self._count_by_bug)
       self.puts('\n')
 
   def print_count_by_owner(self):
     if self._count_by_owner:
-      self.puts('Count by owner:\n', color=color.GREEN)
+      self.puts('Count by owner:\n', use_color=color.GREEN)
       self._print_count_by_dict(self._count_by_owner)
       self.puts('\n')
 
   def print_summary(self):
-    self.puts('%d TODOs observed.\n' % len(self._todos), color=color.MAGENTA)
-    self.puts('%d TODOs matched.\n' % self._matched_count, color=color.MAGENTA)
+    self.puts('%d TODOs observed.\n' % len(self._todos),
+              use_color=color.MAGENTA)
+    self.puts('%d TODOs matched.\n' % self._matched_count,
+              use_color=color.MAGENTA)
     if self._nonstandard:
       self.puts('  %d are nonstandard.\n' % len(self._nonstandard),
-                color=color.RED)
+                use_color=color.RED)
     if self._too_old:
       self.puts('  %d have old timestamps.\n' % len(self._too_old),
-                color=color.RED)
+                use_color=color.RED)
     self.puts('\n')
 
 

@@ -23,6 +23,7 @@
 #include "common/arc_strace.h"
 #include "common/backtrace.h"
 #include "common/danger.h"
+#include "common/plugin_handle.h"
 
 template <typename T> struct DefaultSingletonTraits;
 
@@ -119,7 +120,11 @@ int GetExitStatus() {
 
 /* Attempt to show the backtrace in abort(). */
 void __wrap_abort() {
-  arc::BacktraceInterface::Print();
+  arc::PluginHandle handle;
+  // Do not show a backtrace on the main thread because it depends on the
+  // virtual filesystem lock, which cannot be acquired on the main thread.
+  if (handle.GetPluginUtil() && !handle.GetPluginUtil()->IsMainThread())
+    arc::BacktraceInterface::Print();
   __real_abort();
 }
 

@@ -19,31 +19,45 @@ class PluginHandle {
   ~PluginHandle() {}
 
   RendererInterface* GetRenderer() const {
-    return GetPlugin()->GetRenderer();
+    LOG_ALWAYS_FATAL_IF(!plugin_);
+    return plugin_->GetRenderer();
   }
   SWRendererInterface* GetSWRenderer() const {
-    return GetPlugin()->GetSWRenderer();
+    LOG_ALWAYS_FATAL_IF(!plugin_);
+    return plugin_->GetSWRenderer();
   }
   GPURendererInterface* GetGPURenderer() const {
-    return GetPlugin()->GetGPURenderer();
+    LOG_ALWAYS_FATAL_IF(!plugin_);
+    return plugin_->GetGPURenderer();
   }
   VirtualFileSystemInterface* GetVirtualFileSystem() const {
-    return GetPlugin()->GetVirtualFileSystem();
+    LOG_ALWAYS_FATAL_IF(!plugin_);
+    return plugin_->GetVirtualFileSystem();
   }
   InputManagerInterface* GetInputManager() const {
-    return GetPlugin()->GetInputManager();
+    LOG_ALWAYS_FATAL_IF(!plugin_);
+    return plugin_->GetInputManager();
   }
   AudioManagerInterface* GetAudioManager() const {
-    return GetPlugin()->GetAudioManager();
+    LOG_ALWAYS_FATAL_IF(!plugin_);
+    return plugin_->GetAudioManager();
   }
   CameraManagerInterface* GetCameraManager() const {
-    return GetPlugin()->GetCameraManager();
+    LOG_ALWAYS_FATAL_IF(!plugin_);
+    return plugin_->GetCameraManager();
   }
   VideoDecoderInterface* GetVideoDecoder() const {
-    return GetPlugin()->GetVideoDecoder();
+    LOG_ALWAYS_FATAL_IF(!plugin_);
+    return plugin_->GetVideoDecoder();
   }
   PluginUtilInterface* GetPluginUtil() const {
-    return GetPlugin()->GetPluginUtil();
+    if (!plugin_) {
+      // This path is taken if __wrap_abort is called before app_instance.cc
+      // calls PluginHandle::SetPlugin(). Since our code has some static
+      // initializers, __wrap_abort could be called very early.
+      return NULL;
+    }
+    return plugin_->GetPluginUtil();
   }
 
   // Sets the current plugin for the process. This function must be called
@@ -57,18 +71,13 @@ class PluginHandle {
   friend class InstanceDispatcherInitTest;
   friend class MockPlugin;
 
-  PluginInterface* GetPlugin() const {
-    ALOG_ASSERT(plugin_);
-    // A mutex lock is not necessary here since |plugin_| is set by the main
-    // thread before the first pthread_create() call is made. It is ensured
-    // that a non-main thread can see non-NULL |plugin_| value because
-    // pthread_create() call to create the thread itself is a memory barrier.
-    return plugin_;
-  }
-
   // For testing. Do not call.
   static void UnsetPlugin();
 
+  // A mutex lock is not necessary here since |plugin_| is set by the main
+  // thread before the first pthread_create() call is made. It is ensured
+  // that a non-main thread can see non-NULL |plugin_| value because
+  // pthread_create() call to create the thread itself is a memory barrier.
   static PluginInterface* plugin_;
 
   COMMON_DISALLOW_COPY_AND_ASSIGN(PluginHandle);

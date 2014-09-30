@@ -200,3 +200,11 @@ def is_git_dir(cwd=None):
   if git_dir and git_dir != parent_git_dir:
     return True
   return False
+
+
+def is_file_git_controlled(path, cwd=None):
+  cmd = ['git', 'ls-files', path, '--error-unmatch']
+  with open(os.devnull, 'wb') as devnull:
+    return subprocess.call(cmd, cwd=cwd,
+                           stdout=devnull,
+                           stderr=devnull) == 0

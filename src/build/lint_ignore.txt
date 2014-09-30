@@ -20,6 +20,9 @@
   "mods/android/bionic/libc/arch-nacl/syscalls/irt_nonsfi.h": ["copyright"],
   "mods/android/bionic/libc/include/ucontext.h": ["copyright"],
 
+  # TODO(crbug.com/408776) Is a mod of an stlport file and needs to be removed out of src/
+  "src/ndk_translation/ndk_tests/encoding_test.cc": ["copyright"],
+
   # Dalvik test does not allow to inject ARC MOD marks inside test expectation.
   # See also mods/upstream/dalvik-test-007-exceptions.
   "mods/android/dalvik/tests/007-exceptions/expected.txt": ["analyze_diffs"],
@@ -44,6 +47,10 @@
 
   # That file contains large intrinsics table with it's own style.
   "src/ndk_translation/backend/x86_64/intrinsics.cc": ["cpplint"],
+
+  # TODO(crbug.com/406226): Remove this file once ARC is rebasing to L.
+  "third_party/android/bionic-aosp/libc/include/locale.h": ["cpplint"],
+  "third_party/android/bionic-aosp/libc/include/xlocale.h": ["cpplint"],
 
   # Third party files.
   "third_party/examples/san-angeles/jni/importgl.h": ["cpplint"],

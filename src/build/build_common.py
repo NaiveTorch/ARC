@@ -134,7 +134,8 @@ def as_dict(input):
 
 
 # TODO(crbug.com/366082): Move the following four functions to somewhere else.
-def get_launch_chrome_command(options=[]):
+def get_launch_chrome_command(options=None):
+  options = as_list(options)
   # Run launch_chrome script using /bin/sh so that the script can be executed
   # even if it is on the filesystem with noexec option (e.g. Chrome OS)
   return ['/bin/sh', 'launch_chrome'] + options
@@ -468,12 +469,6 @@ def get_chrome_exe_path_on_local_host():
     return os.path.join(get_chrome_prebuilt_path(), 'chrome')
 
 
-def get_chrome_out_suffix():
-  if OPTIONS.is_arm():
-    return '-arm'
-  return str(OPTIONS.get_target_bitsize())
-
-
 def get_chrome_prebuilt_path():
   # Use 32-bit version of Chrome on Windows regardless of the target bit size.
   if platform_util.is_running_on_cygwin():
@@ -501,20 +496,9 @@ def get_posix_translation_readonly_fs_image_file_path():
                       'readonly_fs_image.img')
 
 
-def get_ppapi_c_headers_dir():
-  assert use_generated_ppapi_c_headers()
-  return os.path.join(get_build_dir(), 'ppapi_c_headers')
-
-
-def get_ppapi_c_headers_stamp():
-  # When you use PPAPI C headers, you need to put this to your
-  # order-only dependency.
-  if use_generated_ppapi_c_headers():
-    # Pretend to be a header file so that you can put this in the
-    # order-only dependency.
-    return [os.path.join(get_ppapi_c_headers_dir(), 'STAMP.h')]
-  else:
-    return []
+def get_ppapi_fpabi_shim_dir():
+  assert use_ppapi_fpabi_shim()
+  return os.path.join(get_build_dir(), 'ppapi_fpabi_shim')
 
 
 def get_runtime_combined_out_dir():
@@ -610,12 +594,7 @@ def is_common_editor_tmp_file(filename):
   return bool(COMMON_EDITOR_TMP_FILE_REG.match(filename))
 
 
-def rebase_path(path, current_base, requested_base):
-  rel_path = os.path.relpath(path, current_base)
-  return os.path.join(requested_base, rel_path)
-
-
-def use_generated_ppapi_c_headers():
+def use_ppapi_fpabi_shim():
   return OPTIONS.is_arm()
 
 

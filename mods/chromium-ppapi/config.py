@@ -5,6 +5,7 @@
 """Build libchromium_ppapi library."""
 
 import os
+import pipes
 
 import build_common
 import build_options
@@ -24,36 +25,40 @@ def _add_chromium_base_compiler_flags(n):
                       'android/system/core/include')
 
 
-def _generate_chromium_ppapi_c_headers_ninja():
-  if not build_common.use_generated_ppapi_c_headers():
+def _generate_chromium_ppapi_fpabi_shim_ninja():
+  if not build_common.use_ppapi_fpabi_shim():
     return
-  ninja_name = 'libchromium_ppapi_c_headers'
+  ninja_name = 'libppapi_fpabi_shim'
   n = ninja_generator.NinjaGenerator(ninja_name)
   rule_name = 'gen_' + ninja_name
-  ppapi_dir = 'chromium-ppapi/ppapi'
-  script_path = staging.as_staging(os.path.join(ppapi_dir,
-                                                'gen_ppapi_c_headers.py'))
 
+  ppapi_dir = staging.as_staging('chromium-ppapi/ppapi')
+  script_root = os.path.join(ppapi_dir, 'generators')
+  script_path = os.path.join(ppapi_dir, 'gen_ppapi_fpabi_shim.py')
+  api_dir = os.path.join(ppapi_dir, 'api')
+  out_file = os.path.join(build_common.get_ppapi_fpabi_shim_dir(),
+                          'ppapi_fpabi_shim.c')
+  gen_command = ['PYTHONPATH=%s' % pipes.quote(script_root),
+                 'python', pipes.quote(script_path),
+                 '--wnone',
+                 '--fpabi',
+                 '--fpabishim', '$out.tmp',
+                 '--range=start,end',
+                 '--srcroot', pipes.quote(api_dir),
+                 '>', '$out.log',
+                 '|| (cat $out.log; rm $out.log; exit 1)']
+  # On success, touch the output file. The generator does not update the file
+  # if the output content is same. In such a case, without this touch, if the
+  # script is updated (by such as repository sync), the script timestamp gets
+  # newer than the generated code, so that ninja always re-runs the script
+  # generation and later phases.
   n.rule(rule_name,
-         command=('python %s $in $out' % script_path),
+         command=('(' + ' '.join(gen_command) + ')' +
+                  ' && touch $out.tmp && mv $out.tmp $out'),
          description=rule_name + ' $out')
 
-  all_generated_headers = []
-  out_dir = build_common.get_ppapi_c_headers_dir()
-  c_headers_dir = os.path.join(ppapi_dir, 'c')
-  for filename in n.find_all_files(c_headers_dir, '.h'):
-    out = n.build(os.path.join(out_dir,
-                               filename.replace('chromium-ppapi/', '')),
-                  rule_name,
-                  filename,
-                  implicit=[script_path])
-    all_generated_headers.extend(out)
-
-  rule_name = 'stamp_' + ninja_name
-  n.rule(rule_name, command='touch $out', description=rule_name + ' $out')
-  n.build(build_common.get_ppapi_c_headers_stamp(),
-          rule_name,
-          all_generated_headers)
+  idls = n.find_all_files(api_dir, 'idl')
+  n.build(out_file, rule_name, idls, implicit=[script_path])
 
 
 def _generate_chromium_ppapi_ninja():
@@ -102,12 +107,15 @@ def _generate_chromium_ppapi_ninja():
     return 'native_client/src/untrusted/irt_stub' in f
 
   build_files = filter(relevant, n.find_all_sources())
-  n.build_default(build_files, base_path=None,
-                  order_only=build_common.get_ppapi_c_headers_stamp())
+  if build_common.use_ppapi_fpabi_shim():
+    build_files.append(os.path.join(build_common.get_ppapi_fpabi_shim_dir(),
+                                    'ppapi_fpabi_shim.c'))
+    n.add_defines('USE_FPABI_SHIM')
+  n.build_default(build_files, base_path=None)
   n.archive()
 
 
 def generate_ninjas():
   ninja_generator_runner.request_run_in_parallel(
-      _generate_chromium_ppapi_c_headers_ninja,
+      _generate_chromium_ppapi_fpabi_shim_ninja,
       _generate_chromium_ppapi_ninja)

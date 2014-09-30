@@ -58,12 +58,13 @@ _DEFAULT_RENDERER = _RENDERER_HW
 _ANSI_FB_LOGGING = 'ansi-fb'
 _ANSI_SF_LAYER_LOGGING = 'ansi-sf-layer'
 _BIONIC_LOADER_LOGGING = 'bionic-loader'
+_EGL_API_TRACING = 'egl-api-tracing'
 _EMUGL_DEBUG_LOGGING = 'emugl-debug'
 _EMUGL_DECODER_LOGGING = 'emugl-decoder'
 _EMUGL_GL_ERROR = 'emugl-gl-error'
 _EMUGL_TRACING = 'emugl-tracing'
-_GLES_TRANSLATION_API_LOGGING = 'gles-translation-api'
-_GLES_TRANSLATION_API_TRACING = 'gles-translation-api-tracing'
+_GLES_API_LOGGING = 'gles-api'
+_GLES_API_TRACING = 'gles-api-tracing'
 _JAVA_METHODS_LOGGING = 'java-methods'
 _LIBDVM_DEBUG = 'libdvm-debug'
 _MAKE_TO_NINJA_LOGGING = 'make-to-ninja'
@@ -74,12 +75,13 @@ _VERBOSE_MEMORY_VIEWER = 'verbose-memory-viewer'
 _ALLOWED_LOGGING = [_ANSI_FB_LOGGING,
                     _ANSI_SF_LAYER_LOGGING,
                     _BIONIC_LOADER_LOGGING,
+                    _EGL_API_TRACING,
                     _EMUGL_DEBUG_LOGGING,
                     _EMUGL_DECODER_LOGGING,
                     _EMUGL_GL_ERROR,
                     _EMUGL_TRACING,
-                    _GLES_TRANSLATION_API_LOGGING,
-                    _GLES_TRANSLATION_API_TRACING,
+                    _GLES_API_LOGGING,
+                    _GLES_API_TRACING,
                     _LIBDVM_DEBUG,
                     _JAVA_METHODS_LOGGING,
                     _MAKE_TO_NINJA_LOGGING,
@@ -173,6 +175,9 @@ class _Options(object):
   def is_bionic_loader_logging(self):
     return _BIONIC_LOADER_LOGGING in self._loggers
 
+  def is_egl_api_tracing(self):
+    return _EGL_API_TRACING in self._loggers
+
   def is_emugl_debug_logging(self):
     return _EMUGL_DEBUG_LOGGING in self._loggers
 
@@ -185,11 +190,11 @@ class _Options(object):
   def is_emugl_tracing(self):
     return _EMUGL_TRACING in self._loggers
 
-  def is_gles_translation_api_logging(self):
-    return _GLES_TRANSLATION_API_LOGGING in self._loggers
+  def is_gles_api_logging(self):
+    return _GLES_API_LOGGING in self._loggers
 
-  def is_gles_translation_api_tracing(self):
-    return _GLES_TRANSLATION_API_TRACING in self._loggers
+  def is_gles_api_tracing(self):
+    return _GLES_API_TRACING in self._loggers
 
   def is_java_methods_logging(self):
     return _JAVA_METHODS_LOGGING in self._loggers
@@ -212,9 +217,6 @@ class _Options(object):
   def is_hw_renderer(self):
     return self.renderer() == _RENDERER_HW
 
-  def is_sw_renderer(self):
-    return self.renderer() == _RENDERER_SW
-
   def use_verbose_memory_viewer(self):
     return _VERBOSE_MEMORY_VIEWER in self._loggers
 
@@ -226,9 +228,6 @@ class _Options(object):
               '-Wno-unused-function',
               '-Wno-unused-variable']
     return ['-w']
-
-  def get_goma_dir(self):
-    return self._goma_dir
 
   def get_system_packages(self):
     return self._system_packages
@@ -268,7 +267,7 @@ class _Options(object):
     args.logging = args.logging.split(',') if args.logging else []
     if args.weird:
       if _Options._is_nacl_target(args.target):
-        args.enable_emugl = False
+        args.enable_emugl = True
         args.enable_touch_overlay = True
         args.logging.extend([
             _EMUGL_DEBUG_LOGGING,
@@ -321,11 +320,6 @@ class _Options(object):
     parser.add_argument('--disable-debug-code', action='store_true',
                         help='Skip debug logging / assertions.')
 
-    parser.add_argument('--disable-emugl', dest='enable_emugl',
-                        action='store_false', default=True,
-                        help='[EXPERIMENTAL] Use alloy graphics library '
-                        'instead of emugl.')
-
     parser.add_argument('--disable-goma', action='store_true',
                         help='Do not use goma to build.')
 
@@ -347,6 +341,11 @@ class _Options(object):
 
     parser.add_argument('--enable-dalvik-jit', action='store_true', help='Run '
                         'Dalvik VM with JIT mode enabled.')
+
+    parser.add_argument('--enable-emugl', dest='enable_emugl',
+                        action='store_true', default=False,
+                        help='[Deprecated] Use emugl instead of the ARC '
+                        'graphics library.')
 
     parser.add_argument('--enable-ndk-translation', action='store_true',
                         help='Enable NDK translation even when direct '
@@ -475,6 +474,9 @@ class _Options(object):
     # TODO(crbug.com/340573): Enable ART for other targets.
     if args.enable_art and not self.is_bare_metal_i686():
       return '--enable-art works only on Bare Metal i686 target.'
+
+    if args.enable_valgrind and not self.is_bare_metal_i686():
+      return '--enable-valgrind works only on Bare Metal i686 target.'
 
     return (self._check_bare_metal_arm_args(args) or
             self._check_enable_dalvik_jit_args(args))

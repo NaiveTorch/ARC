@@ -23,7 +23,6 @@ from util.test.suite_runner import LAUNCH_CHROME_FLAKE_RETRY_COUNT
 
 _ADB_SERVICE_PATTERN = re.compile(
     'I/AdbService:\s+(?:(emulator\-\d+)|Failed to start)')
-_SYSTEM_MODE_PREFIX = 'system_mode.'
 
 
 class SystemModeError(Exception):
@@ -69,11 +68,8 @@ class SystemModeThread(threading.Thread):
     return self._android_serial is not None
 
   def run(self):
-    default_launch_chrome_opts = ['--stderr-log=I', '--nocrxbuild']
-    args = self._suite_runner.get_launch_chrome_command(
-        default_launch_chrome_opts + self._additional_launch_chrome_opts,
-        mode='system',
-        name_override=_SYSTEM_MODE_PREFIX + self._name)
+    args = self._suite_runner.get_system_mode_launch_chrome_command(
+        self._name, additional_args=self._additional_launch_chrome_opts)
     xvfb_output_filename = None
     if self._suite_runner.get_use_xvfb():
       output_directory = SuiteRunnerBase.get_output_directory()
@@ -163,10 +159,15 @@ class SystemMode:
         ...
   """
 
-  def __init__(self, suite_runner, additional_launch_chrome_opts=[]):
+  def __init__(self, suite_runner, additional_launch_chrome_opts=None,
+               rebuild_crx=False):
+    if additional_launch_chrome_opts is None:
+      additional_launch_chrome_opts = []
     self._suite_runner = suite_runner
     self._name = suite_runner.name
     self._additional_launch_chrome_opts = additional_launch_chrome_opts
+    if not rebuild_crx:
+      self._additional_launch_chrome_opts.append('--nocrxbuild')
 
     self._adb = toolchain.get_tool('host', 'adb')
     self._has_error = False

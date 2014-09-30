@@ -177,11 +177,6 @@ def _get_native_runner(target):
   return 'env LD_LIBRARY_PATH=' + build_common.get_load_library_path(target)
 
 
-def _get_qemu_runner(target, qemu):
-  runner = _get_native_runner(target)
-  return runner + ' ' + qemu
-
-
 def _get_valgrind_runner(target):
   valgrind_lib_path = 'third_party/valgrind/linux_x64/lib/valgrind'
   valgrind_env = ('env VALGRIND_LIB=%s VALGRIND_LIB_INNER=%s' %
@@ -291,6 +286,8 @@ def _get_tool_map():
       'bare_metal_arm': {
           'cxx': os.getenv('TARGETCXX', ' arm-linux-gnueabihf-g++'),
           'cc': os.getenv('TARGETCC', ' arm-linux-gnueabihf-gcc'),
+          'clangxx': os.path.join(_CLANG_BIN_DIR, 'clang++'),
+          'clang': os.path.join(_CLANG_BIN_DIR, 'clang'),
           'ld': os.getenv('TARGETLD', 'arm-linux-gnueabihf-g++'),
           'ar': os.getenv('TARGETAR', 'arm-linux-gnueabihf-ar'),
           'nm': os.getenv('TARGETNM', 'arm-linux-gnueabihf-nm'),

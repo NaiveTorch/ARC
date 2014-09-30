@@ -77,6 +77,8 @@ class VirtualFileSystemInterface {
                           size_t hostlen,
                           char* serv,  // NULL is allowed.
                           size_t servlen, int flags) = 0;
+  virtual int getpeername(int sockfd, struct sockaddr* addr, socklen_t* addrlen)
+      = 0;
   virtual int getsockname(int sockfd, struct sockaddr* addr, socklen_t* addrlen)
       = 0;
   virtual int getsockopt(int sockfd, int level, int optname, void* optval,
@@ -133,6 +135,8 @@ class VirtualFileSystemInterface {
   virtual int stat(const std::string& path, struct stat* buf) = 0;
   virtual int statfs(const std::string& path, struct statfs* buf) = 0;
   virtual int statvfs(const std::string& path, struct statvfs* buf) = 0;
+  virtual int symlink(const std::string& oldpath,
+                      const std::string& newpath) = 0;
   virtual int truncate(const std::string& path, off64_t length) = 0;
   virtual mode_t umask(mode_t mask) = 0;
   virtual int unlink(const std::string& pathname) = 0;

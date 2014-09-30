@@ -18,6 +18,7 @@ import toolchain
 from build_options import OPTIONS
 from util import gdb_util
 from util import remote_executor_util
+from util.test import unittest_util
 
 # The fake login name used when running Chrome remotely on a Chrome OS device.
 _FAKE_TEST_USER = 'arc_fake_test_user@gmail.com'
@@ -258,38 +259,24 @@ def _get_adb_path():
                          build_common.get_arc_root())
 
 
-def _get_nacl_tools():
-  """Returns a list of the NaCl tools to be copied to the remote device."""
-  bitsize = OPTIONS.get_target_bitsize()
-  arch = 'x86_%d' % bitsize
-  nacl_tools = [toolchain.get_nacl_tool('sel_ldr_%s' % arch),
-                toolchain.get_nacl_tool('irt_core_%s.nexe' % arch),
-                os.path.join(toolchain.get_nacl_toolchain_libs_path(bitsize),
-                             'runnable-ld.so')]
-  nacl_tools = [os.path.relpath(nacl_tool, build_common.get_arc_root())
-                for nacl_tool in nacl_tools]
-  return nacl_tools
+def _copy_unittest_executables_to_arc_with_exec(executor, tests):
+  """Copies executables for unit tests to a directory mounted with exec."""
+  noexec_paths = [build_common.get_build_path_for_executable(test)
+                  for test in tests]
+  noexec_paths.append(build_common.get_load_library_path())
+  noexec_paths.extend(unittest_util.get_nacl_tools())
+  for noexec_path in noexec_paths:
+    executor.run(_copy_to_arc_root_with_exec(
+        executor.get_remote_arc_root(), noexec_path))
 
 
-def run_remote_unittest(parsed_args, copied_files):
-  copied_files.extend(
-      remote_executor_util.get_unit_test_files_and_directories(parsed_args))
-  copied_files.extend(_get_nacl_tools())
+def run_remote_unittest(parsed_args):
+  copied_files = remote_executor_util.get_unit_test_files_and_directories(
+      parsed_args)
   try:
     executor = _create_remote_executor(parsed_args)
     _setup_remote_environment(executor, copied_files)
-
-    # Copy executable files to a directory mounted with exec.
-    noexec_paths = [build_common.get_build_path_for_executable(test)
-                    for test in parsed_args.tests]
-    noexec_paths.append(build_common.get_load_library_path())
-    if OPTIONS.is_bare_metal_build():
-      noexec_paths.append(build_common.get_bare_metal_loader())
-    else:
-      noexec_paths.extend(_get_nacl_tools())
-    for noexec_path in noexec_paths:
-      executor.run(_copy_to_arc_root_with_exec(
-          executor.get_remote_arc_root(), noexec_path))
+    _copy_unittest_executables_to_arc_with_exec(executor, parsed_args.tests)
 
     verbose = ['--verbose'] if parsed_args.verbose else []
     command = ' '.join(
@@ -312,6 +299,8 @@ def run_remote_integration_tests(parsed_args, argv,
         [_get_adb_path()] +
         configs_for_integration_tests)
     _setup_remote_environment(executor, copied_files)
+    _copy_unittest_executables_to_arc_with_exec(
+        executor, unittest_util.get_all_tests())
     executor.run(_copy_to_arc_root_with_exec(
         executor.get_remote_arc_root(), 'out/adb'))
     command = ' '.join(

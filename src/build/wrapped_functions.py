@@ -9,7 +9,6 @@ def get_wrapped_functions():
   wrapped_functions = ['abort',
                        'accept',
                        'access',
-                       'alphasort',
                        'bind',
                        'chdir',
                        'chmod',
@@ -44,7 +43,6 @@ def get_wrapped_functions():
                        'futimens',
                        'gai_strerror',
                        'getaddrinfo',
-                       'getdents',
                        'gethostbyaddr',
                        'gethostbyname',
                        'gethostbyname2',  # bionic doesn't have gethostbyname2_r

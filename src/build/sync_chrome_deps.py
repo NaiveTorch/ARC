@@ -54,9 +54,7 @@ def main():
   # Get revision of native-client from chromium-ppapi DEPS.
   with open(_PPAPI_DIR + '/DEPS') as f:
     ppapi_deps = f.read().replace('\n', ' ')
-  m = re.match(
-      r'.*native_client/src/native_client\.git\' \+ \'@\' \+ \'([0-9,a-f]+).*',
-      ppapi_deps)
+  m = re.match(r'.*\'nacl_revision\': \'([0-9a-f]+)\',.*', ppapi_deps)
   if not m:
     print 'Unable to find NaCl deps info in', _PPAPI_DIR
     return 1

@@ -7,9 +7,6 @@
 import ninja_generator
 from build_options import OPTIONS
 
-_ARC_WRAP_SOURCES = ['android/bionic/libc/bionic/arc_dir_wrap.cpp',
-                     'android/bionic/libc/bionic/arc_scandir_wrap.cpp']
-
 
 def _add_defines(ninja):
   ninja.add_libchromium_base_compile_flags()
@@ -22,7 +19,6 @@ def _generate_libwrap_ninja():
                                                 base_path='src/wrap',
                                                 enable_clang=True)
   sources = ninja.find_all_sources()
-  sources.extend(_ARC_WRAP_SOURCES)
   ninja.add_compiler_flags('-Werror')
   _add_defines(ninja)
   return ninja.build_default(sources, base_path=None).archive()
@@ -34,7 +30,6 @@ def _generate_libwrap_for_test_ninja():
                                                 instances=0,
                                                 enable_clang=True)
   sources = ninja.find_all_sources()
-  sources.extend(_ARC_WRAP_SOURCES)
   ninja.add_compiler_flags('-Werror')
   _add_defines(ninja)
   ninja.add_defines('LIBWRAP_FOR_TEST')

@@ -86,9 +86,14 @@ def _is_ignorable(path, cwd=None):
   global _gitignore_checker
   if os.path.basename(path) in ['OPEN_SOURCE', '.gitmodules', '.git']:
     return True
-  if path.startswith('.git/'):
+  # Filter out arc_open because this is the location the buildbots use to sync
+  # the open source repository, and if it is not filtered out, it causes 6+
+  # minutes of git-ignore checking on all the files.
+  if path.startswith(('.git/', 'arc_open')):
     return True
-  return _gitignore_checker.matches(path, cwd)
+  if _gitignore_checker.matches(path, cwd):
+    return True
+  return not util.git.is_file_git_controlled(path, cwd)
 
 
 def _add_directory_sync_set(src, rel_src_dir, basenames, filter,

@@ -937,7 +937,11 @@ class CNinjaGenerator(NinjaGenerator):
     if OPTIONS.is_arm():
       archasmflags = (
           # Some external projects like libpixelflinger expect this macro.
-          '-Wa,-mimplicit-it=thumb -Wno-psabi -D__ARM_HAVE_NEON')
+          '-D__ARM_HAVE_NEON')
+    elif OPTIONS.is_nacl_i686():
+      # Use '-Wa,-mtune=core2' to teach assemler to use long Nops for padding.
+      # This produces slightly faster code on all CPUs newer than Pentium4.
+      archasmflags = ' -Wa,-mtune=core2'
     else:
       archasmflags = ''
 
@@ -966,6 +970,15 @@ class CNinjaGenerator(NinjaGenerator):
       # TODO(crbug.com/394688): The performance overhead should be
       # measured, and consider removing this flag.
       archcflags += ' -mstackrealign'
+
+    if OPTIONS.is_nacl_i686():
+      # For historical reasons by default x86-32 NaCl produces code for quote
+      # exotic CPU: 80386 with SSE instructions (but without SSE2!).
+      # Let' use something more realistic.
+      archcflags += ' -march=pentium4 -mtune=core2'
+      # Use '-Wa,-mtune=core2' to teach assemler to use long Nops for padding.
+      # This produces slightly faster code on all CPUs newer than Pentium4.
+      archcflags += ' -Wa,-mtune=core2'
 
     if OPTIONS.is_bare_metal_build():
       archcflags += ' -fstack-protector'
@@ -1031,7 +1044,7 @@ class CNinjaGenerator(NinjaGenerator):
           # a7 is 100% ISA compatible with a15.
           # Unlike Android, we must use the hard-fp ABI since the ARM toolchains
           # for Chrome OS and NaCl does not support soft-fp.
-          '-mcpu=cortex-a15 -mthumb-interwork -mfpu=neon-vfpv4 '
+          '-mcpu=cortex-a15 '
           '-mfloat-abi=softfp ')
       # The toolchains for building Android use -marm by default while the
       # toolchains for Bare Metal do not, so set -marm explicitly as the default
@@ -1183,6 +1196,9 @@ class CNinjaGenerator(NinjaGenerator):
     # measured, and consider removing this flag.
     if OPTIONS.is_bare_metal_i686():
       flags.append('-mincoming-stack-boundary=2')
+    if OPTIONS.is_arm():
+      flags.extend(['-mthumb-interwork', '-mfpu=neon-vfpv4', '-Wno-psabi',
+                    '-Wa,-mimplicit-it=thumb'])
     return flags
 
   @staticmethod
@@ -1191,7 +1207,10 @@ class CNinjaGenerator(NinjaGenerator):
 
   @staticmethod
   def _get_clangflags():
-    return ['-Wheader-hygiene', '-Wstring-conversion']
+    flags = ['-Wheader-hygiene', '-Wstring-conversion']
+    if OPTIONS.is_arm():
+      flags.extend(['-target', 'arm-linux-gnueabi'])
+    return flags
 
   @staticmethod
   def _get_clangxxflags():
@@ -1253,9 +1272,10 @@ class CNinjaGenerator(NinjaGenerator):
       n.emit_compiler_rule('clang', target, flag_name='cflags',
                            extra_flags=extra_flags + ['$clangflags'])
     n.emit_compiler_rule('asm_with_preprocessing', target, flag_name='asmflags',
-                         extra_flags=extra_flags)
+                         extra_flags=extra_flags + ['$gccflags'])
     n.emit_compiler_rule('asm', target, flag_name='asmflags',
-                         supports_deps=False, extra_flags=extra_flags)
+                         supports_deps=False,
+                         extra_flags=extra_flags + ['$gccflags'])
     n.emit_ar_rule('ar', target)
     for rule_suffix in ['', '_system_library']:
       n.emit_linker_rule('ld' + rule_suffix, target, 'ldflags')
@@ -1375,8 +1395,6 @@ class CNinjaGenerator(NinjaGenerator):
         'src/common/chromium_build_config.h'))
 
   def add_ppapi_compile_flags(self):
-    if build_common.use_generated_ppapi_c_headers():
-      self.add_include_paths(build_common.get_ppapi_c_headers_dir())
     self.add_include_paths('chromium-ppapi',
                            'chromium-ppapi/ppapi/lib/gl/include',
                            'out/staging')
@@ -1685,7 +1703,7 @@ class SharedObjectNinjaGenerator(CNinjaGenerator):
 
   def __init__(self, module_name, install_path='/lib',
                disallowed_symbol_files=None,
-               is_system_library=False, link_crtbegin=True,
+               is_system_library=False, link_crtbegin=True, link_stlport=True,
                **kwargs):
     super(SharedObjectNinjaGenerator, self).__init__(
         module_name, ninja_name=module_name + '_so', **kwargs)
@@ -1701,7 +1719,8 @@ class SharedObjectNinjaGenerator(CNinjaGenerator):
     self._is_system_library = is_system_library
     # For libc.so, we must not set syscall wrappers.
     if not is_system_library and not self._is_host:
-      self._shared_deps.extend(build_common.get_bionic_shared_objects())
+      self._shared_deps.extend(
+          build_common.get_bionic_shared_objects(link_stlport))
     self.installed_shared_library_list = []
     self._link_crtbegin = link_crtbegin
 
@@ -1710,20 +1729,21 @@ class SharedObjectNinjaGenerator(CNinjaGenerator):
     """Disables further linking of any shared libraries"""
     cls._ENABLED = False
 
-  def _link_shared_object(self, output, inputs=None, variables={},
+  def _link_shared_object(self, output, inputs=None, variables=None,
                           allow_undefined=False, implicit=None, **kwargs):
     flag_variable = 'hostldflags' if self._is_host else 'ldflags'
     if not SharedObjectNinjaGenerator._ENABLED:
       raise Exception('Linking of additional shared libraries is not allowed')
-    variables = self._add_lib_vars(dict(as_dict(variables)))
+    variables = self._add_lib_vars(as_dict(variables))
     if not self._link_crtbegin:
       variables['crtbegin_for_so'] = ''
     implicit = (as_list(implicit) + self._static_deps + self._shared_deps +
                 self._whole_archive_deps)
-    implicit.extend([build_common.get_bionic_crtbegin_so_o(),
-                     build_common.get_bionic_crtend_so_o()])
-    if OPTIONS.is_debug_code_enabled() and not self._is_system_library:
-      implicit.append(build_common.get_bionic_libc_malloc_debug_leak_so())
+    if not self._is_host:
+      implicit.extend([build_common.get_bionic_crtbegin_so_o(),
+                       build_common.get_bionic_crtend_so_o()])
+      if OPTIONS.is_debug_code_enabled() and not self._is_system_library:
+        implicit.append(build_common.get_bionic_libc_malloc_debug_leak_so())
     if not allow_undefined:
       CNinjaGenerator.add_to_variable(variables, flag_variable, '-Wl,-z,defs')
     soname = self._get_soname()
@@ -1798,11 +1818,12 @@ class ExecNinjaGenerator(CNinjaGenerator):
   def link(self, variables=None, implicit=None, **kwargs):
     implicit = (as_list(implicit) + self._static_deps + self._shared_deps +
                 self._whole_archive_deps)
-    implicit.extend([build_common.get_bionic_crtbegin_o(),
-                     build_common.get_bionic_crtend_o()])
-    if OPTIONS.is_debug_code_enabled() and not self._is_system_library:
-      implicit.append(build_common.get_bionic_libc_malloc_debug_leak_so())
-    variables = self._add_lib_vars(dict(as_dict(variables)))
+    if not self._is_host:
+      implicit.extend([build_common.get_bionic_crtbegin_o(),
+                       build_common.get_bionic_crtend_o()])
+      if OPTIONS.is_debug_code_enabled() and not self._is_system_library:
+        implicit.append(build_common.get_bionic_libc_malloc_debug_leak_so())
+    variables = self._add_lib_vars(as_dict(variables))
     intermediate_bin = self.build(
         os.path.join(self._intermediates_dir,
                      self._module_name),
@@ -1993,6 +2014,10 @@ class TestNinjaGenerator(ExecNinjaGenerator):
                             'libpluginhandle.a')
     self.add_include_paths('third_party/testing/gmock/include')
     self._run_counter = 0
+    self._disabled_tests = []
+    self._qemu_disabled_tests = []
+    if OPTIONS.is_arm():
+      self._qemu_disabled_tests.append('*.QEMU_DISABLED_*')
 
   @staticmethod
   def _get_toplevel_run_test_variables():
@@ -2018,17 +2043,17 @@ class TestNinjaGenerator(ExecNinjaGenerator):
             build_common.get_test_output_handler(),
             'run_test $in'),
         'run_gtest': (
-            '$runner $in $argv --gtest_color=yes',
+            '$runner $in $argv $gtest_options',
             build_common.get_test_output_handler(use_crash_analyzer=True),
             'run_gtest $in'),
         'run_gtest_with_valgrind': (
-            '$valgrind_runner $in $argv --gtest_color=yes',
+            '$valgrind_runner $in $argv $gtest_options',
             build_common.get_test_output_handler(),
             'run_gtest_with_valgrind $in')
     }
     if OPTIONS.is_bare_metal_build():
       rules['run_gtest_glibc'] = (
-          '$qemu_arm $in $argv --gtest_color=yes',
+          '$qemu_arm $in $argv $gtest_options',
           build_common.get_test_output_handler(use_crash_analyzer=True),
           'run_gtest_glibc $in')
     return rules
@@ -2042,14 +2067,17 @@ class TestNinjaGenerator(ExecNinjaGenerator):
     for name, (command, output_handler, description) in rules.iteritems():
       n.rule(name, '%s %s' % (command, output_handler), description=description)
 
-  @staticmethod
-  def _save_test_info(test_path, counter, rule, variables):
+  def _save_test_info(self, test_path, counter, rule, variables):
     """Save information needed to run unit tests remotely as JSON file."""
     test_name = os.path.basename(test_path)
     rules = TestNinjaGenerator._get_toplevel_run_test_rules()
     merged_variables = TestNinjaGenerator._get_toplevel_run_test_variables()
     merged_variables.update(variables)
     merged_variables['in'] = test_path
+    merged_variables['disabled_tests'] = ':'.join(self._disabled_tests)
+    merged_variables['qemu_disabled_tests'] = ':'.join(
+        self._qemu_disabled_tests)
+
     test_info = {
         'variables': merged_variables,
         'command': rules[rule][0],
@@ -2075,6 +2103,14 @@ class TestNinjaGenerator(ExecNinjaGenerator):
   def build_default_all_test_sources(self):
     return self.build_default(self.find_all_contained_test_sources(),
                               base_path=None)
+
+  def add_disabled_tests(self, *disabled_tests):
+    """Add tests to be disabled."""
+    self._disabled_tests += list(disabled_tests)
+
+  def add_qemu_disabled_tests(self, *qemu_disabled_tests):
+    """Add tests to be disabled only on QEMU."""
+    self._qemu_disabled_tests += list(qemu_disabled_tests)
 
   def link(self, **kwargs):
     # Be very careful here.  If you have no objects because of
@@ -2109,7 +2145,12 @@ class TestNinjaGenerator(ExecNinjaGenerator):
       return
     variables = {}
     if argv:
-      variables = {'argv': argv}
+      variables['argv'] = argv
+    variables['gtest_options'] = '--gtest_color=yes'
+    if self._disabled_tests or self._qemu_disabled_tests:
+      variables['gtest_options'] += ' --gtest_filter=-' + ':'.join(
+          self._disabled_tests + self._qemu_disabled_tests)
+
     implicit = as_list(implicit)
     # When you run a test, you need to install .so files.
     for deps in self._shared_deps:
@@ -2127,8 +2168,7 @@ class TestNinjaGenerator(ExecNinjaGenerator):
     self.build(test_path + '.results.' + str(self._run_counter), rule,
                inputs=test_path, variables=variables, implicit=implicit)
 
-    TestNinjaGenerator._save_test_info(
-        test_path, self._run_counter, rule, variables)
+    self._save_test_info(test_path, self._run_counter, rule, variables)
 
 
 class PpapiTestNinjaGenerator(TestNinjaGenerator):

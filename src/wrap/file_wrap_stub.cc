@@ -115,15 +115,6 @@ extern "C" int __wrap_munlockall() {
   ARC_STRACE_RETURN(-1);
 }
 
-extern "C" int __wrap_symlink(const char* oldp, const char* newp) {
-  ARC_STRACE_ENTER("symlink", "\"%s\", \"%s\"",
-                     SAFE_CSTR(oldp), SAFE_CSTR(newp));
-  // No symlink support in posix_translation. We use EPERM referring to VFAT.
-  // TODO(crbug.com/226346): Implement it.
-  errno = EPERM;
-  ARC_STRACE_RETURN(-1);
-}
-
 extern "C" int __wrap_umount(const char* target) {
   ARC_STRACE_ENTER("umount", "\"%s\"", SAFE_CSTR(target));
   DANGERF("umount: target=%s", SAFE_CSTR(target));

@@ -125,8 +125,15 @@ def _generate_apk_to_crx_args(parsed_args, metadata=None,
   if combined_metadata_file:
     crx_args.extend(['--combined-metadata', combined_metadata_file])
   crx_args.extend(['-o', parsed_args.arc_data_dir])
+  additional_permissions = []
+  if parsed_args.additional_android_permissions:
+    additional_permissions.extend(
+        parsed_args.additional_android_permissions.split(','))
   if parsed_args.jdb_port or parsed_args.enable_adb:
-    crx_args.extend(['--android-permissions-for-testing', 'INTERNET'])
+    additional_permissions.append('INTERNET')
+  if additional_permissions:
+    crx_args.extend(['--additional-android-permissions',
+                     ','.join(additional_permissions)])
   return crx_args
 
 

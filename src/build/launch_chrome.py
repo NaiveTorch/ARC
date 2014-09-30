@@ -520,7 +520,6 @@ def _compute_chrome_debugging_params(parsed_args):
 
   if OPTIONS.is_nacl_build() and 'plugin' in parsed_args.gdb:
     params.append('--enable-nacl-debug')
-    params.append('--wait-for-debugger-children')
 
   if len(parsed_args.gdb):
     params.append('--disable-hang-monitor')

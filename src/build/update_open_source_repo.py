@@ -24,22 +24,16 @@ def _update_submodules(dest):
   subprocess.check_call(['git', 'submodule', 'update', '--init'], cwd=dest)
 
 
-def _update_local_repository(args):
-  if os.path.exists(args.dest):
-    if not util.git.is_git_dir(args.dest):
-      sys.exit('directory "%s" is not a valid git repo' % args.dest)
-    if util.git.get_uncommitted_files(cwd=args.dest):
-      if not args.force:
-        sys.exit('directory "%s" has uncommitted changes, reset or use --force'
-                 % args.dest)
-      subprocess.check_call(['git', 'reset', '--hard'], cwd=args.dest)
-    logging.info('Updating open source repo at "%s"' % args.dest)
-    subprocess.check_call(['git', 'pull'], cwd=args.dest)
-  else:
-    logging.info('Cloning open source repo to "%s"' % args.dest)
+def _clone_repo_if_needed(dest):
+  if not os.path.exists(dest):
+    logging.info('Cloning open source repo to "%s"' % dest)
     subprocess.check_call(['git', 'clone', '--recursive', _OPEN_SOURCE_URL,
-                           args.dest])
-  _update_submodules(args.dest)
+                           dest])
+
+
+def _validate_local_repository(dest):
+  if not util.git.is_git_dir(dest):
+    sys.exit('directory "%s" is not a valid git repo' % dest)
 
 
 def _check_out_matching_branch(dest):
@@ -63,7 +57,9 @@ def _check_out_matching_branch(dest):
 
 def _test_changes(dest):
   logging.info('Testing changes in open source tree')
-  subprocess.check_call(['./configure'], cwd=dest)
+  configure_options_file = 'out/configure.options'
+  with open(configure_options_file) as f:
+    subprocess.check_call(['./configure'] + f.read().split(), cwd=dest)
   subprocess.check_call(['ninja', 'all', '-j50'], cwd=dest)
 
 
@@ -93,7 +89,8 @@ def _reset_and_clean_repo(dest):
   logging.info('Resetting local open source repository')
   subprocess.check_call(['git', 'reset', '--hard'], cwd=dest)
   logging.info('Clearing untracked files from repository')
-  subprocess.check_call(['git', 'clean', '-f', '-d'], cwd=dest)
+  # -f -f is intentional, this will get rid of untracked modules left behind.
+  subprocess.check_call(['git', 'clean', '-f', '-f', '-d'], cwd=dest)
 
 
 # Updates or clones from scratch the open source repository at the location
@@ -115,15 +112,17 @@ def main():
   args = parser.parse_args(sys.argv[1:])
   if args.verbose:
     logging.getLogger().setLevel(logging.INFO)
-  _update_local_repository(args)
 
-  # If we are pushing changes, we need to be on the correct tracking branch,
-  # otherwise it's ok to just clobber the current directory, which will be reset
-  # later.
-  if args.push_changes:
-    if (args.force and util.git.get_uncommitted_files(cwd=args.dest)):
-      _reset_and_clean_repo(args.dest)
-    _check_out_matching_branch(args.dest)
+  _clone_repo_if_needed(args.dest)
+  _validate_local_repository(args.dest)
+  if (util.git.get_uncommitted_files(cwd=args.dest) and not args.force):
+    logging.error('%s has uncommitted files, use --force to override')
+    return 1
+  _reset_and_clean_repo(args.dest)
+  _check_out_matching_branch(args.dest)
+  # Submodules abandoned between branches will still leave their directories
+  # around which can confuse prepare_open_source_commit, so we clean them out.
+  _reset_and_clean_repo(args.dest)
 
   prepare_open_source_commit.run(args.dest, args.force)
 

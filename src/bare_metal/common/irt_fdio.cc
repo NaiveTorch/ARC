@@ -74,9 +74,11 @@ int nacl_irt_fstat(int fd, struct nacl_abi_stat* out) {
 
 int nacl_irt_getdents(int /* fd */, struct dirent* /* dirp */,
                       size_t /* count */, size_t* /* nread */) {
-  // TODO(crbug.com/266627): Implement this.
-  fprintf(stderr, "*** nacl_irt_getdents *** is called!\n");
-  abort();
+  // We have no plan to implement this IRT. Even nonsfi_loader in NaCl
+  // repository does not have this. Though we are disabling almost all
+  // Bionic's unittests for dirent, a few of them are still running
+  // and they call opendir.
+  return ENOSYS;
 }
 
 extern "C" {

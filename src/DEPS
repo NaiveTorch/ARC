@@ -13,5 +13,9 @@ specific_include_rules = {
     "+gmock",
     "+gtest",
     "+ppapi_mocks",
+  ],
+  ".*\.h": [
+    # DEFINE_THREAD_LOCAL emits variables in an anonymous namespace.
+    "-common/thread_local.h"
   ]
 }

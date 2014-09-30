@@ -189,6 +189,7 @@ def _filter_libc_common(vars):
       'android/bionic/libc/arch-nacl/syscalls/fstat.c',
       'android/bionic/libc/arch-nacl/syscalls/fsync.c',
       'android/bionic/libc/arch-nacl/syscalls/futex.c',
+      'android/bionic/libc/arch-nacl/syscalls/getdents.c',
       'android/bionic/libc/arch-nacl/syscalls/getpid.c',
       'android/bionic/libc/arch-nacl/syscalls/gettid.c',
       'android/bionic/libc/arch-nacl/syscalls/gettimeofday.c',
@@ -929,7 +930,6 @@ def _generate_bionic_tests():
   # Set the same flag as third_party/android/bionic/tests/Android.mk.
   # This is necessary for dlfcn_test.cpp as it calls dlsym for this symbol.
   ldflags = '$ldflags -Wl,--export-dynamic -Wl,-u,DlSymTestFunction'
-  argv = ''
   if OPTIONS.is_arm():
     # Disables several pthread tests because pthread is flaky on qemu-arm.
     disabled_tests = ['pthread.pthread_attr_setguardsize',
@@ -942,14 +942,14 @@ def _generate_bionic_tests():
                       'pthread.pthread_no_op_detach_after_join',
                       'string.strsignal_concurrent',
                       'string.strerror_concurrent']
-    argv = '--gtest_filter=-' + ':'.join(disabled_tests)
+    n.add_qemu_disabled_tests(*disabled_tests)
   n.add_compiler_flags('-W', '-Wno-unused-parameter', '-Werror')
   # GCC's builtin ones should be disabled when testing our own ones.
   # TODO(crbug.com/357564): Change this to -fno-builtin.
   for f in ['bzero', 'memcmp', 'memset', 'nearbyint', 'nearbyintf',
             'nearbyintl', 'sqrt', 'strcmp', 'strcpy', 'strlen']:
     n.add_compiler_flags('-fno-builtin-' + f)
-  n.run(n.link(variables={'ldflags': ldflags}), argv)
+  n.run(n.link(variables={'ldflags': ldflags}))
 
 
 def _generate_libgcc_ninja():

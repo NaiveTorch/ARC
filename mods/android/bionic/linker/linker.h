@@ -259,13 +259,6 @@ struct soinfo {
 
   bool has_text_relocations;
   bool has_DT_SYMBOLIC;
-  // ARC MOD BEGIN
-  // Add is_ndk for NDK direct execution. This will be used to decide
-  // the semantics of symbol resolution for this binary.
-#if defined(USE_NDK_DIRECT_EXECUTION)
-  bool is_ndk;
-#endif
-  // ARC MOD END
 
   void CallConstructors();
   void CallDestructors();

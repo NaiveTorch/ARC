@@ -400,15 +400,23 @@ inline void ignore_result(const T&) {}
     ( ((void)android_printAssertArc(NULL, LOG_TAG, ## __VA_ARGS__)) )
 #endif
 
-// WARNING: The log message printed by this macro is also sent to the crash
-// server, provided the user has agreed to do so. Do not use this macro unless
+// WARNING: The log message printed by these macros is also sent to the crash
+// server, provided the user has agreed to do so. Do not use these macros unless
 // you are absolutely sure that the message will not have any privacy-sensitive
 // data. Otherwise, use LOG_ALWAYS_FATAL, which checks if the user has signed in
 // using a tester account.
-#ifndef LOG_ALWAYS_FATAL_ADD_TO_CRASH_REPORT
-#define LOG_ALWAYS_FATAL_ADD_TO_CRASH_REPORT(...) \
+#ifndef LOG_ALWAYS_FATAL_AND_ADD_TO_CRASH_REPORT
+#define LOG_ALWAYS_FATAL_AND_ADD_TO_CRASH_REPORT(...) \
     ( ((void)android_printAssertArcAddToCrashReport(NULL, LOG_TAG, \
                                                     ## __VA_ARGS__)) )
+#endif
+
+#ifndef LOG_ALWAYS_FATAL_AND_ADD_TO_CRASH_REPORT_IF
+#define LOG_ALWAYS_FATAL_AND_ADD_TO_CRASH_REPORT_IF(cond, ...) \
+    ( (CONDITION(cond)) \
+    ? ( ((void)android_printAssertArcAddToCrashReport(NULL, LOG_TAG, \
+                                                     ## __VA_ARGS__)) ) \
+    : (void)0 )
 #endif
 /* ARC MOD END FORK */
 /*

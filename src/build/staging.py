@@ -137,10 +137,12 @@ def _create_overlay_base(base_dir, overlays, dest_dir):
     #      we need under ppapi/ do not depend on base/.
     #  - breakpad: minidump_generator.cc includes headers in the directory.
     #      Note that chromium_org/ does not have breakpad/.
+    #  - third_party: ppapi/generators/ library depeneds on ply library in
+    #      third_party directory.
     # Note: Never add 'base' to |whitelist|. Having two base/ directories (one
     #   in out/staging/chromium-ppapi/ and the other in
     #   out/staging/android/external/chromium_org/) makes ARC build fail.
-    whitelist = ['ppapi', 'breakpad']
+    whitelist = ['ppapi', 'breakpad', 'third_party']
     if name in whitelist:
       return True
     return False
