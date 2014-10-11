@@ -15,8 +15,6 @@
 // Define atexit using __cxa_atexit.
 //
 
-#if !defined(__arm__)
-
 #include <stdlib.h>
 
 extern void *__dso_handle __attribute__((weak));
@@ -25,5 +23,3 @@ int atexit(void (*function)(void)) {
   return __cxa_atexit((void (*)(void *))function, NULL  /* arg */,
                       __dso_handle);
 }
-
-#endif
