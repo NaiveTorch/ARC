@@ -34,3 +34,25 @@ uid_t getgid(void) {
 uid_t getuid(void) {
   return 0;
 }
+
+int getresuid(uid_t *ruid, uid_t *euid, uid_t *suid) {
+  if (!ruid || !euid || !suid) {
+    return -EFAULT;
+  }
+
+  *ruid = getuid();
+  *euid = geteuid();
+  *suid = getuid();
+  return 0;
+}
+
+int getresgid(uid_t *rgid, uid_t *egid, uid_t *sgid) {
+  if (!rgid || !egid || !sgid) {
+    return -EFAULT;
+  }
+
+  *rgid = getgid();
+  *egid = getegid();
+  *sgid = getgid();
+  return 0;
+}

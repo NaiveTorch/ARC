@@ -112,8 +112,6 @@ DEFINE_ENOSYS_SYSCALL(int, getpeername, int sockfd, struct sockaddr *addr,
                       socklen_t *addrlen)
 DEFINE_ENOSYS_SYSCALL(pid_t, getpgid, pid_t pid)
 DEFINE_ENOSYS_SYSCALL(pid_t, getppid, void)
-DEFINE_ENOSYS_SYSCALL(int, getresgid, gid_t *rgid, gid_t *egid, gid_t *sgid)
-DEFINE_ENOSYS_SYSCALL(int, getresuid, uid_t *ruid, uid_t *euid, uid_t *suid)
 DEFINE_ENOSYS_SYSCALL(int, init_module,
                       void *module_image, unsigned long len,
                       const char *param_values)
