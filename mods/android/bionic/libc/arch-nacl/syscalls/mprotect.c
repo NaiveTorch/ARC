@@ -10,15 +10,6 @@
 int __mprotect (const void *addr, size_t len, int prot)
 // ARC MOD END
 {
-  // ARC MOD BEGIN
-  // Disallow mmap with both PROT_WRITE and PROT_EXEC so that we can
-  // make sure only whitelisted code creates writable executable
-  // pages. To create RWX pages, use arc::MprotectRWX explicitly.
-  if ((prot & PROT_WRITE) && (prot & PROT_EXEC)) {
-    errno = EPERM;
-    return -1;
-  }
-  // ARC MOD END
   int result = __nacl_irt_mprotect (addr, len, prot);
   if (result != 0) {
     errno = result;

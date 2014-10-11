@@ -15,13 +15,6 @@ void *__mmap(void *addr, size_t len, int bionic_prot, int bionic_flags,
            int fd, off_t offset) {
 // ARC MOD END
   // ARC MOD BEGIN
-  // Disallow mmap with both PROT_WRITE and PROT_EXEC so that we can
-  // make sure only whitelisted code creates writable executable
-  // pages. To create RWX pages, use arc::MprotectRWX explicitly.
-  if ((bionic_prot & PROT_WRITE) && (bionic_prot & PROT_EXEC)) {
-    errno = EPERM;
-    return -1;
-  }
   int prot = 0;
   if (bionic_prot & PROT_READ)
     prot |= NACL_ABI_PROT_READ;
