@@ -10,6 +10,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <inttypes.h>
+#include <linux/ashmem.h>  // ASHMEM_*
 #include <linux/sync.h>  // SYNC_IOC_*
 #include <nacl_stat.h>
 #include <netinet/in.h>
@@ -932,7 +933,7 @@ std::string GetIoctlRequestStr(int request) {
   switch (request) {
     CASE_APPEND_ENUM_STR(FIONREAD, result);
     default: {
-      // Unable to write switch-case since bionic ioctl.h enables _IOC_TYPECHECK
+      // Unable to write switch-case since Bionic ioctl.h enables _IOC_TYPECHECK
       // which is not allowed in constant expression.
       const unsigned int urequest = static_cast<unsigned int>(request);
       if (urequest == SYNC_IOC_WAIT) {
@@ -941,6 +942,26 @@ std::string GetIoctlRequestStr(int request) {
         AppendResult("SYNC_IOC_MERGE", &result);
       } else if (urequest == SYNC_IOC_FENCE_INFO) {
         AppendResult("SYNC_IOC_FENCE_INFO", &result);
+      } else if (urequest == ASHMEM_SET_NAME) {
+        AppendResult("ASHMEM_SET_NAME", &result);
+      } else if (urequest == ASHMEM_GET_NAME) {
+        AppendResult("ASHMEM_GET_NAME", &result);
+      } else if (urequest == ASHMEM_SET_SIZE) {
+        AppendResult("ASHMEM_SET_SIZE", &result);
+      } else if (urequest == ASHMEM_GET_SIZE) {
+        AppendResult("ASHMEM_GET_SIZE", &result);
+      } else if (urequest == ASHMEM_SET_PROT_MASK) {
+        AppendResult("ASHMEM_SET_PROT_MASK", &result);
+      } else if (urequest == ASHMEM_GET_PROT_MASK) {
+        AppendResult("ASHMEM_GET_PROT_MASK", &result);
+      } else if (urequest == ASHMEM_PIN) {
+        AppendResult("ASHMEM_SET_PIN", &result);
+      } else if (urequest == ASHMEM_UNPIN) {
+        AppendResult("ASHMEM_SET_UNPIN", &result);
+      } else if (urequest == ASHMEM_GET_PIN_STATUS) {
+        AppendResult("ASHMEM_GET_PIN_STATUS", &result);
+      } else if (urequest == ASHMEM_PURGE_ALL_CACHES) {
+        AppendResult("ASHMEM_PURGE_ALL_CACHES", &result);
       } else {
         AppendResult(base::StringPrintf("%d???", request), &result);
       }

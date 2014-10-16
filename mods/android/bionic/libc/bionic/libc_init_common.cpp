@@ -124,6 +124,51 @@ void __libc_init_tls(KernelArgumentBlock& args) {
   tls[TLS_SLOT_BIONIC_PREINIT] = &args;
 }
 
+// ARC MOD BEGIN
+#if defined(BARE_METAL_BIONIC)
+// Define helper functions to initialize __stack_chk_guard for ARC.
+static void init_stack_chk_guard_by_irt_random() {
+  nacl_irt_random irt_random;
+  if (__nacl_irt_query(NACL_IRT_RANDOM_v0_1, &irt_random,
+                       sizeof(irt_random)) != sizeof(irt_random)) {
+    static const char msg[] =
+        "Failed to get irt_random for __stack_chk_guard! "
+        "(this is OK for unittests)\n";
+    write(STDERR_FILENO, msg, sizeof(msg) - 1);
+  }
+  size_t nread;
+  if (irt_random.get_random_bytes(
+          reinterpret_cast<char*>(&__stack_chk_guard),
+          sizeof(__stack_chk_guard), &nread) != 0 ||
+      nread != sizeof(__stack_chk_guard)) {
+    static const char msg[] =
+        "Failed to get random bytes for __stack_chk_guard!\n";
+    write(STDERR_FILENO, msg, sizeof(msg) - 1);
+    exit(1);
+  }
+}
+#endif
+
+static void init_stack_chk_guard() {
+  // __stack_chk_guard is a variable which could be used by GCC to detect stack
+  // smashing (see -fstack-protector).
+  //
+  // Since NaCl does not provide AT_RANDOM, we fill a fixed value
+  // here. This would be okay for NaCl because NaCl toolchain does not
+  // support -fstack-protector anyway.
+  __stack_chk_guard = 0xfee1dead;
+#if defined(BARE_METAL_BIONIC)
+  // For Bare Metal mode, we use IRT random to initialize the
+  // canary. If IRT random does not exist, it means we are using
+  // nonsfi_loader which does not have IRT random and we are running a
+  // unittest. We do not care the security of unittests, let's just
+  // keep going.
+  init_stack_chk_guard_by_irt_random();
+#elif !defined(__native_client__)
+#error Either __native_client__ or BARE_METAL_BIONIC must be set.
+#endif
+}
+// ARC MOD END
 void __libc_init_common(KernelArgumentBlock& args) {
   // Initialize various globals.
   environ = args.envp;
@@ -134,37 +179,12 @@ void __libc_init_common(KernelArgumentBlock& args) {
 
   // AT_RANDOM is a pointer to 16 bytes of randomness on the stack.
   // ARC MOD BEGIN
-  // __stack_chk_guard is a variable which could be used by GCC to detect stack
-  // smashing (see -fstack-protector).
-#if defined(__native_client__)
-  // Since NaCl does not provide AT_RANDOM, we fill a fixed value
-  // here. This would be okay for NaCl because NaCl toolchain does not
-  // support -fstack-protector anyway.
-  __stack_chk_guard = 0xfee1dead;
-#elif defined(BARE_METAL_BIONIC)
-  // For Bare Metal mode, we use IRT random to initialize the canary.
-  nacl_irt_random irt_random;
-  if (__nacl_irt_query(NACL_IRT_RANDOM_v0_1, &irt_random,
-                       sizeof(irt_random)) != sizeof(irt_random)) {
-    static const char msg[] =
-        "Failed to get irt_random for __stack_chk_guard!\n";
-    write(STDERR_FILENO, msg, sizeof(msg) - 1);
-    exit(1);
-  }
-  size_t nread;
+#if defined(HAVE_ARC)
+  init_stack_chk_guard();
   // The least significant byte of the canary must be zero to prevent
   // memory exposure by functions like puts. This is compatible with
   // glibc. See
   // https://sourceware.org/git/?p=glibc.git;a=blob;f=sysdeps/generic/dl-osinfo.h;h=d7667f862dd40a2c2b4d4672cdef7a617f047274;hb=HEAD
-  if (irt_random.get_random_bytes(
-          reinterpret_cast<char*>(&__stack_chk_guard),
-          sizeof(__stack_chk_guard), &nread) != 0 ||
-      nread != sizeof(__stack_chk_guard)) {
-    static const char msg[] =
-        "Failed to get random bytes for __stack_chk_guard!\n";
-    write(STDERR_FILENO, msg, sizeof(msg) - 1);
-    exit(1);
-  }
 #if BYTE_ORDER != LITTLE_ENDIAN
 #error "We only support little endian architectures"
 #endif
@@ -173,7 +193,7 @@ void __libc_init_common(KernelArgumentBlock& args) {
   // ARC MOD END
   __stack_chk_guard = *reinterpret_cast<uintptr_t*>(getauxval(AT_RANDOM));
   // ARC MOD BEGIN
-#endif
+#endif  // HAVE_ARC
   // ARC MOD END
 
   // Get the main thread from TLS and add it to the thread list.

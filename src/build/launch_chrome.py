@@ -283,6 +283,27 @@ def _get_chrome_path(parsed_args):
     return remote_executor.get_chrome_exe_path()
 
 
+def _get_nacl_helper_path(parsed_args):
+  if parsed_args.nacl_helper_binary:
+    return parsed_args.nacl_helper_binary
+  chrome_path = _get_chrome_path(parsed_args)
+  return os.path.join(os.path.dirname(chrome_path), 'nacl_helper')
+
+
+def _get_nacl_irt_path(parsed_args):
+  if not OPTIONS.is_nacl_build():
+    return None
+  chrome_path = _get_chrome_path(parsed_args)
+  irt = toolchain.get_tool(OPTIONS.target(), 'irt')
+  nacl_irt_path = os.path.join(os.path.dirname(chrome_path), irt)
+  nacl_irt_debug_path = nacl_irt_path + '.debug'
+  # Use debug version nacl_irt if it exists.
+  if os.path.exists(nacl_irt_debug_path):
+    return nacl_irt_debug_path
+  else:
+    return nacl_irt_path
+
+
 def _setup_sigterm_handler():
   # We much rely on atexit module in this script. Some other scripts, such as
   # run_integration_tests, send the SIGTERM to let this script know to be
@@ -430,8 +451,7 @@ class ChromeProcess(filtered_subprocess.Popen):
 def _compute_chrome_plugin_params(parsed_args):
   params = []
   extensions = [
-      remote_executor.resolve_path(build_common.get_runtime_out_dir()),
-      remote_executor.resolve_path(build_common.get_handler_dir())]
+      remote_executor.resolve_path(build_common.get_runtime_out_dir())]
   params.append('--load-extension=' + ','.join(extensions))
 
   params.append(
@@ -698,8 +718,7 @@ def _select_output_handler(parsed_args, stats, chrome_process, **kwargs):
 
   output_handler = CrashAddressFilter(output_handler)
 
-  if (OPTIONS.is_crash_reporting_enabled() and
-      not platform_util.is_running_on_remote_host()):
+  if not platform_util.is_running_on_remote_host():
     output_handler = MinidumpFilter(output_handler)
 
   return output_handler
@@ -750,7 +769,9 @@ def _run_chrome(parsed_args, stats, **kwargs):
   p = ChromeProcess(params)
   atexit.register(_terminate_chrome, p)
 
-  gdb_util.maybe_launch_gdb(parsed_args.gdb, parsed_args.gdb_type, p.pid)
+  gdb_util.maybe_launch_gdb(parsed_args.gdb, parsed_args.gdb_type,
+                            _get_nacl_helper_path(parsed_args),
+                            _get_nacl_irt_path(parsed_args), p.pid)
 
   # Write the PID to a file, so that other launch_chrome process sharing the
   # same user data can find the process. In common case, the file will be

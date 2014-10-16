@@ -35,6 +35,7 @@ import filtered_subprocess
 import run_integration_tests
 from build_options import OPTIONS
 from ninja_generator import ApkFromSdkNinjaGenerator
+from util import launch_chrome_util
 from util import remote_executor
 from util.test.suite_runner import SuiteRunnerBase
 from util.test.suite_runner_config_flags import PASS
@@ -102,7 +103,7 @@ class BaseDriver(object):
     if self._args.verbose:
       args.append('-v')
     remote_executor.copy_remote_arguments(self._args, args)
-    self._run(build_common.get_launch_chrome_command([
+    self._run(launch_chrome_util.get_launch_chrome_command([
         'perftest',
         '--noninja',
         '--iterations=' + str(self._args.iterations)
@@ -114,7 +115,7 @@ class BaseDriver(object):
     if self._args.verbose:
       args.append('-v')
     remote_executor.copy_remote_arguments(self._args, args)
-    self._run(build_common.get_launch_chrome_command([
+    self._run(launch_chrome_util.get_launch_chrome_command([
         'atftest',
         '--noninja',
     ] + args))
@@ -320,7 +321,7 @@ class GLPerfDriver(BaseDriver):
 
   def _run_arc_perf(self):
     return Run(
-        build_common.get_launch_chrome_command(
+        launch_chrome_util.get_launch_chrome_command(
             ['run', 'mods/examples/PepperPerf/android/bin/GLPerf-debug.apk']),
         until='--------------- END ---------------').output()
 

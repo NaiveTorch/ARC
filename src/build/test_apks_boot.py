@@ -18,6 +18,7 @@ import time
 import build_common
 from build_options import OPTIONS
 from util import concurrent
+from util import launch_chrome_util
 from util import output_handler
 from util import remote_executor
 
@@ -101,7 +102,7 @@ class ApkRunner(object):
     self._show_result()
 
   def _run_test(self):
-    args = build_common.get_launch_chrome_command([
+    args = launch_chrome_util.get_launch_chrome_command([
         'perftest',
         '--crx-name-override=test_apks_boot-' + self._name,
         '--minimum-lifetime=%d' % self._args.minimum_lifetime,

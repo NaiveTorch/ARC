@@ -1,7 +1,9 @@
 Errors found in file src/build/tests/analyze_diffs/mods/GLEScontext.cpp:
 
-(Use diff -u src/build/tests/analyze_diffs/third_party/GLEScontext.cpp \
-src/build/tests/analyze_diffs/mods/GLEScontext.cpp to verify.)
+(Use following to verify:
+diff -u src/build/tests/analyze_diffs/third_party/GLEScontext.cpp \
+src/build/tests/analyze_diffs/mods/GLEScontext.cpp
+)
 
 Line 574: Upstream missing identifier:
 /* ARC MOD BEGIN UPSTREAM */

@@ -90,6 +90,7 @@ def _convert_launch_chrome_options_to_external_metadata(parsed_args):
   is_slow_debug_run = bool(parsed_args.jdb_port or parsed_args.gdb)
   if is_slow_debug_run:
     metadata['isSlowDebugRun'] = is_slow_debug_run
+    metadata['sleepOnBlur'] = False
 
   if (parsed_args.mode == 'atftest' or parsed_args.mode == 'system' or
       OPTIONS.get_system_packages()):

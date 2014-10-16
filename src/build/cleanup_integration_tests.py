@@ -29,6 +29,7 @@ _KILL_PROCESSES_LINUX = [
 ]
 
 _KILL_PROCESSES_CYGWIN = [
+    'adb.exe',
     'chrome.exe',
     'nacl64.exe',
     'tail.exe',

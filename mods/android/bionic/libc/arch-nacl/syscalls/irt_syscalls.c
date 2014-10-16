@@ -440,11 +440,6 @@ __init_irt_table (void)
     {
       __nacl_irt_open = u.nacl_irt_filename.open;
       // ARC MOD BEGIN
-      // For Bare Metal's debugger support. See crbug.com/354290
-#ifdef BARE_METAL_BIONIC
-      // TODO(crbug.com/354290): Remove this code.
-      __nacl_irt_open_real = u.nacl_irt_filename.open;
-#endif
       // Upstream uses nacl_abi_stat as it #define stat.
       // __nacl_irt_stat = u.nacl_irt_filename.nacl_abi_stat;
       __nacl_irt_stat = u.nacl_irt_filename.stat;
@@ -586,6 +581,17 @@ __init_irt_table (void)
                         sizeof(u.nacl_irt_dev_filename)) ==
       sizeof(u.nacl_irt_dev_filename))
     {
+      // ARC MOD BEGIN
+      __nacl_irt_open = u.nacl_irt_dev_filename.open;
+      // For Bare Metal's debugger support. See crbug.com/354290
+#ifdef BARE_METAL_BIONIC
+      // TODO(crbug.com/354290): Remove this code.
+      __nacl_irt_open_real = u.nacl_irt_dev_filename.open;
+#endif
+      // Upstream uses nacl_abi_stat as it #define stat.
+      // __nacl_irt_stat = u.nacl_irt_filename.nacl_abi_stat;
+      __nacl_irt_stat = u.nacl_irt_filename.stat;
+      // ARC MOD END
       __nacl_irt_mkdir = u.nacl_irt_dev_filename.mkdir;
       __nacl_irt_chdir = u.nacl_irt_dev_filename.chdir;
       __nacl_irt_rmdir = u.nacl_irt_dev_filename.rmdir;

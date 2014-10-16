@@ -116,9 +116,10 @@ dev_list="apache2.2-bin bison cdbs curl dpkg-dev elfutils devscripts fakeroot
           libpulse-dev libsctp-dev libspeechd-dev libsqlite3-dev libssl-dev
           libudev-dev libwww-perl libxslt1-dev libxss-dev libxt-dev libxtst-dev
           mesa-common-dev openbox patch perl php5-cgi pkg-config python
-          python-cherrypy3 python-dev python-psutil rpm ruby subversion
-          ttf-dejavu-core ttf-indic-fonts ttf-kochi-gothic ttf-kochi-mincho
-          wdiff xfonts-mathml zip $chromeos_dev_list"
+          python-cherrypy3 python-crypto python-dev python-openssl
+          python-psutil rpm ruby subversion ttf-dejavu-core ttf-indic-fonts
+          ttf-kochi-gothic ttf-kochi-mincho wdiff xfonts-mathml zip
+          $chromeos_dev_list"
 
 # 64-bit systems need a minimum set of 32-bit compat packages for the pre-built
 # NaCl binaries.
@@ -161,7 +162,8 @@ dbg_list="libatk1.0-dbg libc6-dbg libcairo2-dbg libfontconfig1-dbg
 # arm cross toolchain packages needed to build chrome on armhf
 arm_list="libc6-dev-armhf-cross
           linux-libc-dev-armhf-cross
-          g++-arm-linux-gnueabihf"
+          g++-arm-linux-gnueabihf
+          linux-libc-dev:i386"
 
 # Packages to build NaCl, its toolchains, and its ports.
 naclports_list="ant autoconf bison cmake gawk intltool xutils-dev xsltproc"

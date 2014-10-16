@@ -310,6 +310,14 @@ class NinjaGenerator(ninja_syntax.Writer):
            command='$command || (rm $out; exit 1)',
            description='execute $command')
 
+    # Rule to make the list of external symbols in a shared library.
+    # Setting restat to True so that ninja can stop building its dependents
+    # when the content is not modified.
+    n.rule('mktoc',
+           'src/build/make_table_of_contents.py %s $in $out' % OPTIONS.target(),
+           description='make_table_of_contents $in',
+           restat=True)
+
   @staticmethod
   def consume_ninjas():
     """Returns the list of NinjaGenerator created in the process."""
@@ -438,6 +446,10 @@ class NinjaGenerator(ninja_syntax.Writer):
 
     return ' '.join(flags)
 
+  @staticmethod
+  def _rebase_to_build_dir(path):
+    return os.path.join(build_common.get_build_dir(), path.lstrip(os.sep))
+
   def install_to_root_dir(self, output, inputs):
     top_dir = output.lstrip(os.path.sep).split(os.path.sep)[0]
     if top_dir not in ['dev', 'proc', 'sys', 'system', 'vendor']:
@@ -447,8 +459,7 @@ class NinjaGenerator(ninja_syntax.Writer):
     self._root_dir_install_targets.append(output)
 
   def install_to_build_dir(self, output, inputs):
-    out_path = os.path.join(build_common.get_build_dir(),
-                            output.lstrip(os.sep))
+    out_path = self._rebase_to_build_dir(output)
     self.build(out_path, 'install', inputs)
     self._build_dir_install_targets.append('/system/' + output.lstrip(os.sep))
 
@@ -561,6 +572,7 @@ class NinjaGenerator(ninja_syntax.Writer):
       # gcc 4.8 has a new check warning "-Wunused-local-typedefs", but most
       # sources are not ready for this.  So we disable this warning for now.
       extra_flags.append('-Wno-unused-local-typedefs')
+
     if supports_deps:
       self.rule(rule_name,
                 deps='gcc',
@@ -938,10 +950,6 @@ class CNinjaGenerator(NinjaGenerator):
       archasmflags = (
           # Some external projects like libpixelflinger expect this macro.
           '-D__ARM_HAVE_NEON')
-    elif OPTIONS.is_nacl_i686():
-      # Use '-Wa,-mtune=core2' to teach assemler to use long Nops for padding.
-      # This produces slightly faster code on all CPUs newer than Pentium4.
-      archasmflags = ' -Wa,-mtune=core2'
     else:
       archasmflags = ''
 
@@ -970,15 +978,6 @@ class CNinjaGenerator(NinjaGenerator):
       # TODO(crbug.com/394688): The performance overhead should be
       # measured, and consider removing this flag.
       archcflags += ' -mstackrealign'
-
-    if OPTIONS.is_nacl_i686():
-      # For historical reasons by default x86-32 NaCl produces code for quote
-      # exotic CPU: 80386 with SSE instructions (but without SSE2!).
-      # Let' use something more realistic.
-      archcflags += ' -march=pentium4 -mtune=core2'
-      # Use '-Wa,-mtune=core2' to teach assemler to use long Nops for padding.
-      # This produces slightly faster code on all CPUs newer than Pentium4.
-      archcflags += ' -Wa,-mtune=core2'
 
     if OPTIONS.is_bare_metal_build():
       archcflags += ' -fstack-protector'
@@ -1038,25 +1037,25 @@ class CNinjaGenerator(NinjaGenerator):
 
   @staticmethod
   def get_commonflags():
+    archcommonflags = []
     if OPTIONS.is_arm():
-      archcommonflags = (
+      archcommonflags.extend([
           # Our target ARM device is either a15 or a15+a7 big.LITTLE. Note that
           # a7 is 100% ISA compatible with a15.
           # Unlike Android, we must use the hard-fp ABI since the ARM toolchains
           # for Chrome OS and NaCl does not support soft-fp.
-          '-mcpu=cortex-a15 '
-          '-mfloat-abi=softfp ')
+          '-mcpu=cortex-a15',
+          '-mfloat-abi=softfp'
+      ])
       # The toolchains for building Android use -marm by default while the
       # toolchains for Bare Metal do not, so set -marm explicitly as the default
       # mode.
       if OPTIONS.is_bare_metal_build():
-        archcommonflags += '-marm '
-    elif OPTIONS.is_nacl_x86_64():
-      archcommonflags = '-m64 '
-    else:
-      archcommonflags = '-m32 '
+        archcommonflags.append('-marm')
+    elif OPTIONS.is_i686():
+      archcommonflags.append('-m32')
 
-    ldflags = os.getenv('LDFLAGS', '')
+    archcommonflags.append(os.getenv('LDFLAGS', ''))
     # We always use -fPIC even for Bare Metal mode, where we create
     # PIE for executables. To determine whether -fPIC or -fPIE is
     # appropriate, we need to know if we are building objects for an
@@ -1072,7 +1071,8 @@ class CNinjaGenerator(NinjaGenerator):
     # 2. GCC uses PLT even for locally defined symbols if -fPIC is
     # specified. This makes no difference for us because the linker
     # will remove the call to PLT as we specify -Bsymbolic anyway.
-    return '-fPIC ' + archcommonflags + ldflags
+    archcommonflags.append('-fPIC')
+    return ' '.join(archcommonflags)
 
   @staticmethod
   def get_asmflags():
@@ -1199,6 +1199,16 @@ class CNinjaGenerator(NinjaGenerator):
     if OPTIONS.is_arm():
       flags.extend(['-mthumb-interwork', '-mfpu=neon-vfpv4', '-Wno-psabi',
                     '-Wa,-mimplicit-it=thumb'])
+    if OPTIONS.is_nacl_i686():
+      # For historical reasons by default x86-32 NaCl produces code for quote
+      # exotic CPU: 80386 with SSE instructions (but without SSE2!).
+      # Let's use something more realistic.
+      flags.extend(['-march=pentium4', '-mtune=core2'])
+      # Use '-Wa,-mtune=core2' to teach assemler to use long Nops for padding.
+      # This produces slightly faster code on all CPUs newer than Pentium4.
+      flags.append('-Wa,-mtune=core2')
+    if OPTIONS.is_nacl_x86_64():
+      flags.append('-m64')
     return flags
 
   @staticmethod
@@ -1210,6 +1220,12 @@ class CNinjaGenerator(NinjaGenerator):
     flags = ['-Wheader-hygiene', '-Wstring-conversion']
     if OPTIONS.is_arm():
       flags.extend(['-target', 'arm-linux-gnueabi'])
+    if OPTIONS.is_nacl_i686():
+      flags.extend(['-target', 'i686-unknown-nacl', '-arch', 'x86-32',
+                    '--pnacl-allow-translate'])
+    if OPTIONS.is_nacl_x86_64():
+      flags.extend(['-target', 'x86_64-unknown-nacl', '-arch', 'x86-64',
+                    '--pnacl-allow-translate'])
     return flags
 
   @staticmethod
@@ -1359,6 +1375,12 @@ class CNinjaGenerator(NinjaGenerator):
     if self._is_host:
       return rule_prefix + '.host'
     return rule_prefix + '.' + OPTIONS.target()
+
+  def _get_toc_file_for_so(self, so_file):
+    if self._is_host:
+      return so_file + '.TOC'
+    basename_toc = os.path.basename(so_file) + '.TOC'
+    return os.path.join(build_common.get_load_library_path(), basename_toc)
 
   def cxx(self, name, **kwargs):
     rule = 'clangxx' if self._enable_clang else 'cxx'
@@ -1737,8 +1759,12 @@ class SharedObjectNinjaGenerator(CNinjaGenerator):
     variables = self._add_lib_vars(as_dict(variables))
     if not self._link_crtbegin:
       variables['crtbegin_for_so'] = ''
-    implicit = (as_list(implicit) + self._static_deps + self._shared_deps +
-                self._whole_archive_deps)
+    implicit = as_list(implicit) + self._static_deps + self._whole_archive_deps
+    if self._notices_only:
+      implicit += self._shared_deps
+    else:
+      implicit += map(self._get_toc_file_for_so, self._shared_deps)
+
     if not self._is_host:
       implicit.extend([build_common.get_bionic_crtbegin_so_o(),
                        build_common.get_bionic_crtend_so_o()])
@@ -1784,6 +1810,18 @@ class SharedObjectNinjaGenerator(CNinjaGenerator):
       install_so = os.path.join(self._install_path, basename_so)
       self.install_to_build_dir(install_so, intermediate_so)
       self.installed_shared_library_list.append(install_so)
+
+      # Create TOC file next to the installed shared library.
+      self.build(self._get_toc_file_for_so(install_so),
+                 'mktoc', self._rebase_to_build_dir(install_so),
+                 implicit='src/build/make_table_of_contents.py')
+    else:
+      # Create TOC file next to the intermediate shared library if the shared
+      # library is not to be installed. E.g. host binaries are not installed.
+      self.build(self.get_build_path(basename_so + '.TOC'),
+                 'mktoc', intermediate_so,
+                 implicit='src/build/make_table_of_contents.py')
+
     # Make sure |intermediate_so| contain neither 'disallowed_symbols.defined'
     # symbols nor libchromium_base.a symbols, but the check is unnecessary for
     # the host (i.e. it does not matter if the disallowed symbols are included
@@ -1816,8 +1854,12 @@ class ExecNinjaGenerator(CNinjaGenerator):
       self._shared_deps.extend(build_common.get_bionic_shared_objects())
 
   def link(self, variables=None, implicit=None, **kwargs):
-    implicit = (as_list(implicit) + self._static_deps + self._shared_deps +
-                self._whole_archive_deps)
+    implicit = as_list(implicit) + self._static_deps + self._whole_archive_deps
+    if self._notices_only:
+      implicit += self._shared_deps
+    else:
+      implicit += map(self._get_toc_file_for_so, self._shared_deps)
+
     if not self._is_host:
       implicit.extend([build_common.get_bionic_crtbegin_o(),
                        build_common.get_bionic_crtend_o()])
@@ -3136,7 +3178,8 @@ class ApkFromSdkNinjaGenerator(NinjaGenerator):
 
 class ApkNinjaGenerator(JavaNinjaGenerator):
   def __init__(self, module_name, base_path=None, source_subdirectories=None,
-               install_path=None, canned_classes_apk=None, **kwargs):
+               install_path=None, canned_classes_apk=None, install_lazily=False,
+               **kwargs):
     # Set the most common defaults for APKs.
     if source_subdirectories is None:
       source_subdirectories = ['src']
@@ -3170,6 +3213,7 @@ class ApkNinjaGenerator(JavaNinjaGenerator):
           subpath='package.odex', is_target=True)
 
     self._canned_classes_apk = canned_classes_apk
+    self._install_lazily = install_lazily
 
   @staticmethod
   def emit_common_rules(n):
@@ -3303,6 +3347,16 @@ class ApkNinjaGenerator(JavaNinjaGenerator):
       super(ApkNinjaGenerator, self).install_to_root_dir(
           JavaNinjaGenerator._change_extension(install_to, '.odex', '.apk'),
           self._output_odex_file)
+
+    if self._install_lazily:
+      # To retrieve intent-filter and provider in bootstrap, copy
+      # AndroidManifest.xml as <module name>.xml.
+      manifest_path = staging.as_staging(
+          os.path.join(self._base_path, 'AndroidManifest.xml'))
+      install_manifest_path = os.path.join(self._install_path,
+                                           '%s.xml' % self._module_name)
+      super(ApkNinjaGenerator, self).install_to_root_dir(
+          install_manifest_path, manifest_path)
     return self
 
 

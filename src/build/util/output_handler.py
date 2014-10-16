@@ -118,7 +118,9 @@ class OutputDumper(object):
     self.LINE_SUPPRESS = [
         # Problems with gPrecise ALSA give PCM 'underrun occurred' messages
         # even when stopped in the debugger sometimes.
-        'underrun occurred']
+        'underrun occurred',
+        # When debugging with gdb, NaCl is emitting many of these messages.
+        'NaClAppThreadSetSuspendedRegisters: Registers not modified']
 
   def handle_timeout(self):
     pass

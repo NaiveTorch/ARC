@@ -68,8 +68,9 @@ class CrashAnalyzer(object):
     for dirpath, dirnames, filenames in (
         os.walk(build_common.get_load_library_path())):
       for filename in filenames:
-        if filename.endswith('.nexe'):
+        if re.match(r'arc_[^/]*\.nexe$', filename):
           name = '/lib/main.nexe'
+          print 'Used %s as main.nexe' % filename
         else:
           name = os.path.basename(filename)
         if name in self._binary_map:

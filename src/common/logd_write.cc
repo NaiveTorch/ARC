@@ -43,7 +43,8 @@ const int kTagSpacing = 15;
 
 namespace {
 
-arc::AddCrashLogMessageFunction g_add_crash_log_message = NULL;
+arc::AddCrashExtraInformationFunction g_add_crash_extra_information = NULL;
+const char kLogMessage[] = "log_message";
 
 }  // namespace
 
@@ -70,8 +71,8 @@ void PrintLog(int prio, const char* tag, const char* msg) {
 
 }  // namespace
 
-void RegisterCrashCallback(AddCrashLogMessageFunction function) {
-  g_add_crash_log_message = function;
+void RegisterCrashCallback(AddCrashExtraInformationFunction function) {
+  g_add_crash_extra_information = function;
 }
 
 
@@ -220,8 +221,10 @@ void __android_log_assert(const char* cond, const char* tag,
                             ARC_LOG_FATAL,
                             tag,
                             msg);
-  if (g_add_crash_log_message != NULL)
-    g_add_crash_log_message(arc::ReportableOnlyForTesters, msg.c_str());
+  if (g_add_crash_extra_information != NULL)
+    g_add_crash_extra_information(arc::ReportableOnlyForTesters,
+                                  kLogMessage,
+                                  msg.c_str());
 
   va_end(arguments);
 
@@ -238,8 +241,10 @@ void __android_log_vassert(const char* cond, const char* tag,
                             ARC_LOG_FATAL,
                             tag,
                             msg);
-  if (g_add_crash_log_message != NULL)
-    g_add_crash_log_message(arc::ReportableOnlyForTesters, msg.c_str());
+  if (g_add_crash_extra_information != NULL)
+    g_add_crash_extra_information(arc::ReportableOnlyForTesters,
+                                  kLogMessage,
+                                  msg.c_str());
 
   // Trap.
   abort();
@@ -260,8 +265,10 @@ void __android_log_assert_with_source(const char* cond, const char* tag,
                             msg);
   va_end(arguments);
 
-  if (g_add_crash_log_message != NULL)
-    g_add_crash_log_message(arc::ReportableOnlyForTesters, msg.c_str());
+  if (g_add_crash_extra_information != NULL)
+    g_add_crash_extra_information(arc::ReportableOnlyForTesters,
+                                  kLogMessage,
+                                  msg.c_str());
 
   // Trap.
   abort();
@@ -283,8 +290,10 @@ void __android_log_assert_with_source_and_add_to_crash_report(
                             msg);
   va_end(arguments);
 
-  if (g_add_crash_log_message != NULL)
-    g_add_crash_log_message(arc::ReportableForAllUsers, msg.c_str());
+  if (g_add_crash_extra_information != NULL)
+    g_add_crash_extra_information(arc::ReportableForAllUsers,
+                                  kLogMessage,
+                                  msg.c_str());
 
   // Trap.
   abort();

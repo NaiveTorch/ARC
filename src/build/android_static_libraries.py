@@ -56,6 +56,8 @@ def get_android_static_library_deps():
       'libnbaio.a',  # used by audioflinger
       'libndk_libandroid.a',
       'libndk_libandroid_runtime.a',
+      'libndk_libcrypto_unstable.a',
+      'libndk_libcutils_unstable.a',
       'libndk_libEGL.a',
       'libndk_libGLESv1_CM.a',
       'libndk_libGLESv2.a',

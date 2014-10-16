@@ -5,21 +5,39 @@
 #include <errno.h>
 
 #include <irt_syscalls.h>
-
+// ARC MOD BEGIN
+#include <nacl_mman.h>
+// ARC MOD END
 
 // ARC MOD BEGIN
 // Return void* instead of __ptr_t and add code for debug logs.
-void *__mmap(void *addr, size_t len, int prot, int flags,
+void *__mmap(void *addr, size_t len, int bionic_prot, int bionic_flags,
            int fd, off_t offset) {
 // ARC MOD END
   // ARC MOD BEGIN
   // Disallow mmap with both PROT_WRITE and PROT_EXEC so that we can
   // make sure only whitelisted code creates writable executable
   // pages. To create RWX pages, use arc::MprotectRWX explicitly.
-  if ((prot & PROT_WRITE) && (prot & PROT_EXEC)) {
+  if ((bionic_prot & PROT_WRITE) && (bionic_prot & PROT_EXEC)) {
     errno = EPERM;
     return -1;
   }
+  int prot = 0;
+  if (bionic_prot & PROT_READ)
+    prot |= NACL_ABI_PROT_READ;
+  if (bionic_prot & PROT_WRITE)
+    prot |= NACL_ABI_PROT_WRITE;
+  if (bionic_prot & PROT_EXEC)
+    prot |= NACL_ABI_PROT_EXEC;
+  int flags = 0;
+  if (bionic_flags & MAP_SHARED)
+    flags |= NACL_ABI_MAP_SHARED;
+  if (bionic_flags & MAP_PRIVATE)
+    flags |= NACL_ABI_MAP_PRIVATE;
+  if (bionic_flags & MAP_FIXED)
+    flags |= NACL_ABI_MAP_FIXED;
+  if (bionic_flags & MAP_ANONYMOUS)
+    flags |= NACL_ABI_MAP_ANONYMOUS;
   // ARC MOD END
   int result = __nacl_irt_mmap (&addr, len, prot, flags, fd, offset);
   if (result != 0) {

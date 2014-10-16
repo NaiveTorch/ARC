@@ -305,9 +305,7 @@ def run_command(cmd, ignore_failure=False):
 
 def run_command_with_filter(cmd):
   """Run the command with MinidumpFilter if crash reporting is enabled. """
-  output_handler = RemoteOutputHandler()
-  if OPTIONS.is_crash_reporting_enabled():
-    output_handler = MinidumpFilter(output_handler)
+  output_handler = MinidumpFilter(RemoteOutputHandler())
   p = filtered_subprocess.Popen(cmd)
   p.run_process_filtering_output(output_handler)
   if p.returncode:

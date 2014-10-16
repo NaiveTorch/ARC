@@ -114,15 +114,13 @@ def update_bug_line(lines, bug_ids):
     return lines
 
   def _reject_empty_bug(bug_id):
-    if not bug_id or re.match(r'(n/a|none)', bug_id, flags=re.IGNORECASE):
-      return False
-    return True
+    return not re.match(r'(n/a|none)', bug_id, flags=re.IGNORECASE)
 
   for index, line in enumerate(lines):
     if line.startswith(_BUG_PREFIX):
       orig_bug_ids = re.split(r',\s*', line[len(_BUG_PREFIX):].strip())
-      orig_bug_ids = filter(_reject_empty_bug, orig_bug_ids)
-      bug_ids.update(set(orig_bug_ids))
+      orig_bug_ids = [bug_id for bug_id in orig_bug_ids if bug_id]
+      bug_ids.update(set(filter(_reject_empty_bug, orig_bug_ids)))
       orig_bug_ids_str = ', '.join(sorted(orig_bug_ids))
       bug_ids_str = ', '.join(sorted(bug_ids))
       if orig_bug_ids_str != bug_ids_str:

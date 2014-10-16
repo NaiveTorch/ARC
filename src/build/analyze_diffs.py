@@ -43,7 +43,7 @@ def show_error(stats, error):
   if not stats['errors']:
     sys.stderr.write('Errors found in file ' + stats['our_path'] + ':\n\n')
     if stats['tracking_path'] is not None:
-      sys.stderr.write('(Use diff -u %s \\\n%s to verify.)\n\n' %
+      sys.stderr.write('(Use following to verify:\ndiff -u %s \\\n%s\n)\n\n' %
                        (stats['tracking_path'], stats['our_path']))
   stats['errors'] = True
   sys.stderr.write('Line %d: %s\n' % (stats['lineno'], error))

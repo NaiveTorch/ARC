@@ -45,8 +45,6 @@ class LoadHandlerBreakpoint(gdb.Breakpoint):
     self._addr_expr = addr_expr
 
   def _get_binary_path_from_link_map(self):
-    # TODO(crbug.com/310118): Use stack address instead of lm->l_name
-    # which requires debug info.
     name = gdb.execute('p %s' % self._name_expr, to_string=True)
     # This will be like: $5 = 0x357bc "libc.so"
     matched = re.match(r'.*"(.*)"', name)
@@ -140,11 +138,27 @@ def init(arc_nexe, library_path, runnable_ld_path, remote_address=None,
   If remote_address is specified, we control the _LOCK_FILE using this
   address. This should be specified only for Chrome OS.
   """
+  if arc_nexe.endswith('_i686.nexe'):
+    # With x86 ABI, we use the stack to pass arguments:
+    # $esp+0: return address
+    # $esp+4: first argument (name)
+    # $esp+8: second argument (base)
+    name_expr = '((char**)($esp+4))[0]'
+    addr_expr = '((unsigned int*)($esp+8))[0]'
+  elif arc_nexe.endswith('_arm.nexe'):
+    # With ARM ABI, we use R0 and R1 to pass the first and second
+    # arguments, respectively.
+    name_expr = '(char*)$r0'
+    addr_expr = '(unsigned int)$r1'
+  else:
+    raise Exception('Unsupported architecture')
+
   program_address = (_get_program_loaded_address(runnable_ld_path) +
                      _get_text_section_file_offset(runnable_ld_path))
   gdb.execute('add-symbol-file %s 0x%x' % (runnable_ld_path, program_address))
   LoadHandlerBreakpoint(arc_nexe, library_path,
-                        'notify_gdb_of_load', 'info->name', 'info->base')
+                        '__bare_metal_notify_gdb_of_load',
+                        name_expr, addr_expr)
   # Everything gets ready, so unlock the program.
   if remote_address:
     command = ['ssh', 'root@%s' % remote_address]
@@ -157,6 +171,9 @@ def init(arc_nexe, library_path, runnable_ld_path, remote_address=None,
 
 
 def init_for_unittest(bare_metal_loader, test_binary, library_path):
+  # TODO(crbug.com/376666): nonsfi_loader does not support IRT
+  # interfaces for GDB. Use bare_metal_gdb.lock even for unittests and
+  # stop using bare_metal::bare_metal_irt_notify_gdb_of_load.
   LoadHandlerBreakpoint(
       test_binary, library_path,
       'bare_metal::bare_metal_irt_notify_gdb_of_load',

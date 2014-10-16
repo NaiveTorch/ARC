@@ -5,6 +5,7 @@
 .ninja_deps
 .ninja_log
 build.ninja
+botlogs/
 out/
 # The mods/android/dalvik/vm/mterp/out directory is special and should not be
 # ignored. It contains machine-generated source for dalvikvm.

@@ -13,6 +13,7 @@ import subprocess
 import build_common
 import tempfile
 from build_options import OPTIONS
+from util import launch_chrome_util
 from util import remote_executor_util
 
 _DEFAULT_STDOUT_PREFIX = 'Chrome-NaCl-stdout'
@@ -97,7 +98,7 @@ def launch_remote_chrome(parsed_args, argv):
          remote_executor_util.SYNC_CHROME, '--verbose', '&&',
          remote_executor_util.SYNC_ADB, '--target=win-x86_64', '&&',
          executor.get_remote_env()] +
-        build_common.get_launch_chrome_command(
+        launch_chrome_util.get_launch_chrome_command(
             remote_executor_util.create_launch_remote_chrome_param(argv)))
     executor.run_with_filter(command)
     return 0

@@ -167,6 +167,12 @@ enum VideoFrameFormat {
   ARC_VIDEOFRAME_FORMAT_NV12 = 7
 };
 
+enum DisplayOrientation {
+  ARC_DISPLAY_ORIENTATION_UNKNOWN = 0,
+  ARC_DISPLAY_ORIENTATION_LANDSCAPE = 1,
+  ARC_DISPLAY_ORIENTATION_PORTRAIT = 2
+};
+
 class CameraManagerInterface {
  public:
   virtual ~CameraManagerInterface() {}
@@ -190,7 +196,8 @@ class CameraManagerInterface {
   // returned true.
   virtual size_t ReadVideoInData(uint8_t* buffer, uint32_t width,
                                  uint32_t height,
-                                 VideoFrameFormat format) = 0;
+                                 VideoFrameFormat format,
+                                 DisplayOrientation orientation) = 0;
 
   // Releases the last captured frame. Should only be called if CaptureFrame
   // returned true.
@@ -346,10 +353,15 @@ class PluginUtilInterface {
   virtual bool IsMainThread() = 0;
   virtual bool IsRendererThread() = 0;
 
-  // Sets JavScript message handler and returns message sender interface. Caller
-  // must free |handler| and returned object.
+  // Sets JavaScript message handler and returns message sender interface.
+  // Caller must free |handler| and returned object.
   virtual ArcMessageBridgeMessageSender* InitializeArcMessageBridge(
       AndroidMessageHandler* handler) = 0;
+
+  // Report an unhandled exception.
+  virtual void ReportApplicationCrash(const char* log_message,
+                                      const char* stack_trace) = 0;
+
   virtual int RunAndWaitForChildPlugin(const char* const argv[],
                                        const char* preopened_fd_args[],
                                        const char* preopened_fd_names[]) = 0;

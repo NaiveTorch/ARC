@@ -223,6 +223,9 @@ extern int (*__nacl_irt_write_real) (int fd, const void *buf, size_t count,
 extern int (*__nacl_irt_clear_cache) (void *addr, size_t size);
 
 // Add Bare Metal specific interfaces.
+// TODO(crbug.com/376666): nonsfi_loader does not support IRT
+// interfaces for GDB. Use bare_metal_gdb.lock even for unittests and
+// remove this code.
 #if defined(BARE_METAL_BIONIC)
 struct link_map;
 extern void (*__bare_metal_irt_notify_gdb_of_load)(struct link_map* map);

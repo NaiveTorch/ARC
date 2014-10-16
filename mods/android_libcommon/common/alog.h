@@ -111,9 +111,10 @@ enum CrashLogMessageKind {
   ReportableForAllUsers
 };
 
-typedef void (*AddCrashLogMessageFunction)
-    (CrashLogMessageKind crash_log_message_kind, const char* message);
-void RegisterCrashCallback(AddCrashLogMessageFunction function);
+typedef void (*AddCrashExtraInformationFunction)
+    (CrashLogMessageKind crash_log_message_kind,
+     const char* field_name, const char* message);
+void RegisterCrashCallback(AddCrashExtraInformationFunction function);
 
 int PrintLogBuf(int bufID, int prio, const char* tag, const char* fmt, ...)
 #if defined(__GNUC__)

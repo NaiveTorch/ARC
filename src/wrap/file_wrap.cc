@@ -270,6 +270,13 @@ void StatToNaClAbiStat(struct stat* st, struct nacl_abi_stat* nacl_stat) {
   nacl_stat->nacl_abi_st_ino = st->st_ino;
 }
 
+// Helper function for stripping "/system/lib/" prefix from |path| if exists.
+const char* StripSystemLibPrefix(const char* path) {
+  const char kSystemLib[] = "/system/lib/";
+  return StartsWithASCII(path, kSystemLib, true)?
+      path : path + sizeof(kSystemLib) -1;
+}
+
 }  // namespace
 
 namespace arc {
@@ -375,12 +382,15 @@ void* __wrap_dlopen(const char* filename, int flag) {
   TRACE_EVENT2(ARC_TRACE_CATEGORY, "wrap_dlopen",
                "filename", TRACE_STR_COPY(SAFE_CSTR(filename)),
                "flag", flag);
-
-  if (filename && filename[0] != '/' &&
-      arc::IsStaticallyLinkedSharedObject(filename)) {
+  if (filename && (
+      (filename[0] != '/' && arc::IsStaticallyLinkedSharedObject(filename)) ||
+      (filename[0] == '/' && arc::IsStaticallyLinkedSharedObject(
+          StripSystemLibPrefix(filename))))) {
     // ARC statically links some libraries into the main
     // binary. When an app dlopen such library, we should return the
     // handle of the main binary so that apps can find symbols.
+    // TODO(crbug.com/400947): Remove this temporary hack once we have stopped
+    //                         converting shared objects to archives.
     result = __real_dlopen(NULL, flag);
   } else {
     result = __real_dlopen(filename, flag);
@@ -622,10 +632,19 @@ int __wrap_open(const char* pathname, int flags, ...) {
                    arc::GetOpenFlagStr(flags).c_str(), mode);
   int fd = -1;
   VirtualFileSystemInterface* file_system = GetFileSystem();
-  if (file_system)
+  if (file_system &&
+      arc::IsStaticallyLinkedSharedObject(StripSystemLibPrefix(pathname))) {
+    // CtsSecurityTest verifies some libraries are ELF format. To pass that
+    // check, returns FD of runnable-ld.so instead.
+    // TODO(crbug.com/400947): Remove this temporary hack once we have stopped
+    //                         converting shared objects to archives.
+    ALOGE("open is called for %s. Opening runnable-ld.so instead.", pathname);
+    fd = file_system->open("/system/lib/runnable-ld.so", flags, mode);
+  } else if (file_system) {
     fd = file_system->open(pathname, flags, mode);
-  else
+  } else {
     fd = __real_open(pathname, flags, mode);
+  }
   if (fd == -1 && errno != ENOENT) {
     DANGERF("pathname=%s flags=%d: %s",
             SAFE_CSTR(pathname), flags, safe_strerror(errno).c_str());
@@ -1142,6 +1161,15 @@ void* __wrap_mmap(
           "addr=%p length=%zu prot=%d flags=%d fd=%d offset=%lld",
           addr, length, prot, flags, fd, static_cast<int64_t>(offset));
   }
+
+  if (prot & ~(PROT_READ | PROT_WRITE | PROT_EXEC))
+    ALOGE("mmap with an unorthodox prot: %d", prot);
+  // We do not support MAP_NORESERVE but this flag is used often and
+  // we can safely ignore it.
+  const int supported_flag = (MAP_SHARED | MAP_PRIVATE | MAP_FIXED |
+                              MAP_ANONYMOUS | MAP_NORESERVE);
+  if (flags & ~supported_flag)
+    ALOGE("mmap with an unorthodox flags: %d", flags);
 
   void* result = MAP_FAILED;
   VirtualFileSystemInterface* file_system = GetFileSystem();

@@ -361,3 +361,6 @@
 [submodule "third_party/android/external/xmp_toolkit"]
 	path = third_party/android/external/xmp_toolkit
 	url = https://android.googlesource.com/platform/external/xmp_toolkit
+[submodule "third_party/android/packages/apps/Camera2"]
+	path = third_party/android/packages/apps/Camera2
+	url = https://android.googlesource.com/platform/packages/apps/Camera2

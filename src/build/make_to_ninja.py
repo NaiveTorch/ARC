@@ -77,7 +77,11 @@ _TARGET_MAKEFILE = 'TARGET_MAKEFILE'
 # the correctness of the variables we care about. Here we whitelist
 # a set of variables and functions that appear to be OK to referenced
 # in Android.mk files without being defined.
-_DEFAULT_VARS = ['ADDITIONAL_BUILD_PROPERTIES',
+#
+# Use _IGNORED_VAR_PREFIXES, _IGNORED_VARS for those that do not need
+# to be defined.
+_DEFAULT_VARS = ['_include_stack',  # for _import_node
+                 'ADDITIONAL_BUILD_PROPERTIES',
                  'ALL_PRODUCTS',
                  'all_res_assets',
                  'ANDROID_BUILD_FROM_SOURCE',
@@ -219,8 +223,6 @@ _DEFAULT_VARS = ['ADDITIONAL_BUILD_PROPERTIES',
                  'should-install-to-system',
                  'SHOW_COMMANDS',
                  'STRIP',
-                 'TARGET_2ND_ARCH',  # for art
-                 'TARGET_2ND_ARCH_VAR_PREFIX',  # for art
                  'TARGET_BOARD_KERNEL_HEADERS',
                  'TARGET_BOARD_PLATFORM',
                  'TARGET_BOOTLOADER_BOARD_NAME',
@@ -260,34 +262,49 @@ _DEFAULT_VARS = ['ADDITIONAL_BUILD_PROPERTIES',
                  'xml_attrs',
                  'xmlns_attrs']
 
-# Ignore these when make complains that such variables are not defined.
-# These prefixes are used for many variables - we cannot pre-define all of
-# them. See comments for _DEFAULT_VARS for more info.
-_IGNORED_VAR_PREFIXES = ['_emugl.',
-                         '_nic.PRODUCTS.',
-                         'libunwind',
-                         'PRODUCTS.']
+# Ignore these when make complains that such variables are not
+# defined.  These prefixes are used for many variables - we cannot
+# pre-define all of them. See comments for _DEFAULT_VARS for more
+# info.  There's too many variables generated with this pattern, so we
+# ignore the default values too.
+_IGNORED_VAR_PREFIXES = [
+    # WTF?
+    '_nic.PRODUCTS.',
+    'PRODUCTS.',
+    # for --enable-emugl.
+    '_emugl.',
+    'libunwind',
+    # base_rules.mk introduces ALL_MODULE_TAGS.<tag>, and
+    # ALL_MODULES.<local module>.<attribute>. See, 'Register with ALL_MODULES'
+    # section in base_rules.mk.
+    'ALL_MODULE_TAGS.',
+    'ALL_MODULES.',
+]
 
+_IGNORED_VAR_PREFIXES_RE = re.compile(
+    '^' + '|'.join([re.escape(w) for w in _IGNORED_VAR_PREFIXES]))
+
+# Ignore missing these variables, as opposed to setting empty values
+# in _DEFAULT_VARS.
 _IGNORED_VARS = [
     # (1), (2), ... are variable name for the arguments of a function
     # call. Some callers may not pass that parameter in and
     # it is normal and make would use empty value.
     # Ignore such warnings.
     '1', '2', '3', '4', '5', '6', '7', '8',
-    # base_rules.mk introduces ALL_MODULE_TAGS.<tag>, and
-    # ALL_MODULES.<local module>.<attribute>. See, 'Register with ALL_MODULES'
-    # section in base_rules.mk.
-    'ALL_MODULE_TAGS\.',
-    'ALL_MODULES\.',
-    # 'my-dir' is referenced (but unused) before definitions.mk
-    # is included. See build/target/board/vbox_x86/device.mk.
-    'my-dir',
-    '_include_stack']
+    # Android has a capability to build for two architectures at the
+    # same time, but for ARC we do not have a second architecture to
+    # target.
+    'TARGET_2ND_ARCH',
+    'TARGET_2ND_ARCH_VAR_PREFIX',
+    # for ART
+    '2ND_HOST_OUT_SHARED_LIBRARIES',
+    '2ND_TARGET_CORE_IMG_OUT']
 
-_IGNORED_RE = re.compile(
-    'warning: undefined variable `(%s)' % '|'.join(
-        _IGNORED_VAR_PREFIXES + _IGNORED_VARS))
-
+_IGNORED_WARNING_RE = re.compile(
+    "warning: undefined variable (`(%s)|`(%s)')" % (
+        '|'.join([re.escape(w) for w in _IGNORED_VAR_PREFIXES]),
+        '|'.join([re.escape(w) for w in _IGNORED_VARS])))
 
 _INITIALIZED = False
 
@@ -638,7 +655,7 @@ def _filter_make_output(stdout, stderr):
   errors = []
   for line in stderr.split('\n'):
     # No way and no need to predefine PRODUCTS. and similar vars.
-    if not line or _IGNORED_RE.search(line):
+    if not line or _IGNORED_WARNING_RE.search(line):
       continue
     errors.append('MAKE STDERR: ' + line)
   assert not errors, 'make exited with warnings: ' + '\n'.join(errors)
@@ -696,16 +713,15 @@ def _run_make(in_file, extra_env_vars):
 
 
 def _filter_var_name(name):
-  for ignored in _IGNORED_VAR_PREFIXES:
-    if name.startswith(ignored):
-      # Ignore. Too many variants of these prefixed inheritance variables.
-      return False
-  return True
+  # If variable name starts with one of our prefixes, ignore. Too many
+  # variants of these prefixed inheritance variables.
+  return not _IGNORED_VAR_PREFIXES_RE.match(name)
 
 
 def _add_var_if_not_empty(vars, name, value):
-  if name and _filter_var_name(name) and value:
-    # Add variable only if it has a non-empty value.
+  if value and name and _filter_var_name(name):
+    # Add variable only if it has a non-empty value, and is not one of
+    # the known prefixes that generate lots of variables.
     vars[name] = value
 
 

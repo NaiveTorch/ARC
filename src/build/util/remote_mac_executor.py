@@ -5,7 +5,7 @@
 # Provides functions for running Chrome on a remote Mac device.
 
 import subprocess
-import build_common
+from util import launch_chrome_util
 from util import remote_executor_util
 
 
@@ -20,7 +20,7 @@ def launch_remote_chrome(parsed_args, argv):
         ['cd', executor.get_remote_arc_root(), '&&',
          remote_executor_util.SYNC_CHROME, '--verbose', '&&',
          remote_executor_util.SYNC_ADB, '--target=mac-x86_64', '&&'] +
-        build_common.get_launch_chrome_command(
+        launch_chrome_util.get_launch_chrome_command(
             remote_executor_util.create_launch_remote_chrome_param(argv)))
     executor.run_with_filter(command)
     return 0

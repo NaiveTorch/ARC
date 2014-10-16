@@ -17,6 +17,7 @@ import build_common
 import toolchain
 from build_options import OPTIONS
 from util import gdb_util
+from util import launch_chrome_util
 from util import remote_executor_util
 from util.test import unittest_util
 
@@ -98,10 +99,9 @@ def _copy_to_arc_root_with_exec(remote_arc_root, path):
   which is mounted with noexec, to a directory mounted without noexec.
   """
   source = os.path.join(remote_arc_root, path)
-  destination = toolchain.get_chromeos_arc_root_with_exec(
-      os.path.dirname(path))
+  destination = toolchain.get_chromeos_arc_root_with_exec(os.path.dirname(path))
   return ' '.join(['mkdir', '-p', destination, '&&',
-                   'cp', '-rf', source, '-t', destination])
+                   'rsync', '-tr', source, destination])
 
 
 def _setup_remote_processes(executor):
@@ -190,7 +190,7 @@ def launch_remote_chrome(parsed_args, argv):
     command = ' '.join(
         ['sudo', '-u', 'chronos',
          executor.get_remote_env()] +
-        build_common.get_launch_chrome_command(
+        launch_chrome_util.get_launch_chrome_command(
             remote_executor_util.create_launch_remote_chrome_param(argv)))
     executor.run_with_filter(command)
   except subprocess.CalledProcessError as e:

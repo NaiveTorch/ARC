@@ -14,9 +14,9 @@ import os
 import re
 import sys
 
-import build_common
 from build_options import OPTIONS
 from ninja_generator import ApkFromSdkNinjaGenerator
+from util import launch_chrome_util
 from util import remote_executor
 
 # The values in _ALLOWED_* must be synchronized with _ALLOWED_VALUES in
@@ -141,21 +141,14 @@ def _validate_gdb_type(parser, args):
 
 
 def _validate_remote_debug_settings(parser, args):
-  if args.remote and 'plugin' in args.gdb:
-    if args.nacl_helper_binary:
-      if not os.path.exists(args.nacl_helper_binary):
-        parser.error('The file specified by --nacl-helper-binary must exist '
-                     'in your workstation.')
+  if 'plugin' in args.gdb:
+    if (args.nacl_helper_binary and
+        not os.path.exists(args.nacl_helper_binary)):
+      parser.error('The file specified by --nacl-helper-binary must exist '
+                   'in your workstation.')
   else:
     if args.nacl_helper_binary:
-      parser.error('--nacl-helper-binary can only be used with '
-                   '--remote and --gdb=plugin')
-
-
-def _validate_debug_args(parser, args):
-  if (args.gdb and OPTIONS.is_bare_metal_build() and
-      OPTIONS.is_optimized_build()):
-    parser.error('GDB with optimzied bare metal build is not supported')
+      parser.error('--nacl-helper-binary can only be used with --gdb=plugin')
 
 
 def _validate_debug_modes(parser, args):
@@ -169,7 +162,6 @@ def _validate_debug_modes(parser, args):
   if len(debug_modes) > 1:
     parser.error("Cannot use more than 1 debug mode:" + str(debug_modes))
 
-  _validate_debug_args(parser, args)
   _validate_gdb_type(parser, args)
   _validate_remote_debug_settings(parser, args)
 
@@ -530,7 +522,7 @@ Native Client Debugging
   # where this script is not needed.
 
   args, opts = parser.parse_known_args(
-      build_common.remove_leading_launch_chrome_args(argv))
+      launch_chrome_util.remove_leading_launch_chrome_args(argv))
 
   if not args.dogfood_metadata:
     _set_default_args(args)

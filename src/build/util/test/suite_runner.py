@@ -10,11 +10,14 @@ import json
 import os
 import subprocess
 import threading
+import types
 
 import build_common
+from util import launch_chrome_util
 from util.test.scoreboard import Scoreboard
 from util.test.suite_runner_config import default_run_configuration
 from util.test.suite_runner_config_flags import FAIL
+from util.test.suite_runner_config_flags import PASS
 from util.test.suite_runner_config_flags import TIMEOUT
 from util.test.test_method_result import TestMethodResult
 
@@ -209,6 +212,26 @@ class SuiteRunnerBase(object):
         Scoreboard.ALL_TESTS_DUMMY_NAME in self._suite_test_expectations):
       del self._suite_test_expectations[Scoreboard.ALL_TESTS_DUMMY_NAME]
 
+  def register_tests(self, test_names):
+    if isinstance(test_names, types.DictType):
+      updated_expectations = test_names.copy()
+    elif isinstance(test_names, (types.ListType, types.GeneratorType)):
+      updated_expectations = dict((test_name, PASS) for test_name in test_names)
+    else:
+      assert False, 'Unexpected type for test_names: %s' % type(test_names)
+
+    unknown_test_expectations = []
+    for test_name, result in self._suite_test_expectations.iteritems():
+      # Verify that the name of each test out of our configured expectations.
+      if (test_name != Scoreboard.ALL_TESTS_DUMMY_NAME and
+          test_name not in updated_expectations):
+        unknown_test_expectations.append(
+            'Test %s is not a known test in suite %s' % (
+                test_name, self._name))
+      updated_expectations[test_name] = result
+    assert not unknown_test_expectations, '\n'.join(unknown_test_expectations)
+    self.set_suite_test_expectations(updated_expectations)
+
   def get_scoreboard(self):
     return self._scoreboard
 
@@ -322,7 +345,7 @@ class SuiteRunnerBase(object):
   def get_launch_chrome_command(self, additional_args, mode=None,
                                 name_override=None):
     """Returns the commandline for running suite runner with launch_chrome."""
-    args = build_common.get_launch_chrome_command()
+    args = launch_chrome_util.get_launch_chrome_command()
     if mode:
       args.append(mode)
     name = name_override if name_override else self._name
@@ -396,9 +419,9 @@ class SuiteRunnerBase(object):
     # Do not rewrite args of the commands other than launch_chrome because
     # the commands do not necessarily support the syntax of reading arguments
     # from a file.
-    if not build_common.is_launch_chrome_command(args):
+    if not launch_chrome_util.is_launch_chrome_command(args):
       return args
-    remaining_args = build_common.remove_leading_launch_chrome_args(args)
+    remaining_args = launch_chrome_util.remove_leading_launch_chrome_args(args)
     args_string = '\n'.join(remaining_args)
     # Do not rewrite args to file if the argument list is short enough.
     if len(args_string) < SuiteRunnerBase.WRITE_ARGS_MIN_LENGTH:
@@ -445,9 +468,10 @@ class SuiteRunnerBase(object):
       print xvfb_output
     return output
 
-  def run_subprocess_test(self, args, env=None, cwd=None):
+  def run_subprocess_test(self, args, test_name=None, env=None, cwd=None):
     """Runs a test which runs subprocess and sets status appropriately."""
     result = None
+    test_name = test_name or Scoreboard.ALL_TESTS_DUMMY_NAME
     # We cannot use the normal retry methods used in test_driver to
     # determine whether to run the test suites that are failing because of
     # Chrome launch failures.  This is because most of the suite runners have
@@ -455,11 +479,11 @@ class SuiteRunnerBase(object):
     # ALL_TESTS_DUMMY_NAME, both of which do not track 'incompletes' properly in
     # the scoreboard.  Keep our own count here.
     chrome_flake_retry = LAUNCH_CHROME_FLAKE_RETRY_COUNT
+    self.get_scoreboard().start_test(test_name)
     while True:
       try:
         raw_output = self.run_subprocess(args, env=env, cwd=cwd)
-        result = TestMethodResult(Scoreboard.ALL_TESTS_DUMMY_NAME,
-                                  TestMethodResult.PASS)
+        result = TestMethodResult(test_name, TestMethodResult.PASS)
         break
       except subprocess.CalledProcessError:
         raw_output = self._get_subprocess_output()
@@ -471,7 +495,7 @@ class SuiteRunnerBase(object):
         if (is_timeout and
             len(raw_output.split('\n')) < _LAUNCH_CHROME_MINIMUM_LINES and
             chrome_flake_retry > 0 and
-            build_common.is_launch_chrome_command(args)):
+            launch_chrome_util.is_launch_chrome_command(args)):
           print '@@@STEP_WARNINGS@@@'
           print '@@@STEP_TEXT@Retrying ' + self.name + ' (Chrome flake)@@@'
           chrome_flake_retry -= 1
@@ -481,12 +505,10 @@ class SuiteRunnerBase(object):
           raw_output += '-' * 10 + ' XVFB output starts ' + '-' * 10
           raw_output += self._get_xvfb_output()
         if is_timeout:
-          result = TestMethodResult(Scoreboard.ALL_TESTS_DUMMY_NAME,
-                                    TestMethodResult.INCOMPLETE)
+          result = TestMethodResult(test_name, TestMethodResult.INCOMPLETE)
         else:
-          result = TestMethodResult(Scoreboard.ALL_TESTS_DUMMY_NAME,
-                                    TestMethodResult.FAIL)
+          result = TestMethodResult(test_name, TestMethodResult.FAIL)
         break
 
     self._scoreboard.update([result])
-    return raw_output, {result.name: result}
+    return raw_output, {test_name: result}

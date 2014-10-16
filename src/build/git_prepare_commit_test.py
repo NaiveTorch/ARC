@@ -95,14 +95,20 @@ index 1d91473..f56a7aa 100755
         ['BUG=\n'],
         git_prepare_commit.update_bug_line(['BUG=\n'], set()))
 
-    # N/A or None should be replaced when there is actually a bug.
+    # N/A or None should not be replaced by bug IDs.
     self.assertEqual(
-        ['BUG=111111, 222222\n'],
+        ['BUG=N/A\n', '# Suggestion: BUG=111111, 222222\n'],
         git_prepare_commit.update_bug_line(['BUG=N/A\n'],
                                            set(('111111', '222222'))))
     self.assertEqual(
-        ['BUG=111111, 222222\n'],
+        ['BUG=nOnE\n', '# Suggestion: BUG=111111, 222222\n'],
         git_prepare_commit.update_bug_line(['BUG=nOnE\n'],
+                                           set(('111111', '222222'))))
+
+    # An empty bug line should be replaced by bug IDs.
+    self.assertEqual(
+        ['BUG=111111, 222222\n'],
+        git_prepare_commit.update_bug_line(['BUG=\n'],
                                            set(('111111', '222222'))))
 
     # Unknown type of bug description should be preserved.

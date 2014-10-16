@@ -327,6 +327,34 @@ static void remove_soinfo_from_debug_map(soinfo* info) {
     }
 }
 
+// ARC MOD BEGIN
+// Define a function which is called when a new binary is loaded by
+// the Bionic loader. src/build/util/bare_metal_gdb.py sets a
+// breakpoint to this function and executes GDB's add-symbol-file
+// command to let GDB read the newly loaded binaries.
+#if defined(BARE_METAL_BIONIC)
+extern "C"
+void __bare_metal_notify_gdb_of_load(const char* name, Elf32_Addr base);
+// We implement this function by assembly to make sure we do not
+// create a stack frame. If we use a C function to create this
+// function, a compiler may or may not generate code for creating
+// a stack frame. By always not creating a stack frame, we can
+// simplify the implementation of bare_metal_gdb.py for i386.
+__asm__(".globl __bare_metal_notify_gdb_of_load\n"
+        "__bare_metal_notify_gdb_of_load:\n"
+        // GDB seems to be sometimes confused when we set a breakpoint
+        // to the instruction which returns from a function.
+        "nop\n"
+# if defined(__arm__)
+        "bx lr\n"
+# elif defined(__i386__) || defined(__x86_64__)
+        "ret\n"
+# else
+#  error "Unsupported architecture!"
+# endif
+        );
+#endif  // BARE_METAL_BIONIC
+// ARC MOD END
 static void notify_gdb_of_load(soinfo* info) {
     // ARC MOD BEGIN
     // Always copy the necessary fields into the debug
@@ -348,6 +376,12 @@ static void notify_gdb_of_load(soinfo* info) {
       map->l_name = info->name;
     }
     map->l_ld = (uintptr_t)info->dynamic;
+
+    __bare_metal_notify_gdb_of_load(info->name, info->base);
+
+    // TODO(crbug.com/376666): nonsfi_loader does not support IRT
+    // interfaces for GDB. Use bare_metal_gdb.lock even for unittests and
+    // remove this code.
     // Ask the Bare Metal loader to interact with GDB.
     if (__bare_metal_irt_notify_gdb_of_load) {
         // GDB has already known about the Bionic loader.
@@ -2068,21 +2102,35 @@ static bool soinfo_link_image(soinfo* si) {
             DEBUG("%s constructors (DT_INIT_ARRAY) found at %p", si->name, si->init_array);
             break;
         case DT_INIT_ARRAYSZ:
-            si->init_array_count = ((unsigned)d->d_un.d_val) / sizeof(Elf32_Addr);
+            // ARC MOD BEGIN
+            // Use sizeof(void*) instead of Elf32_Addr which is
+            // replaced by Elf64_Addr (see linker.h). As x86-64 NaCl
+            // uses ELF64, we need to use 64bit integers to access
+            // addresses in ELF structures. However, for init_array,
+            // fini_array, and preinit_array, NaCl uses 32bit integers
+            // to store addresses.
+            si->init_array_count = ((unsigned)d->d_un.d_val) / sizeof(void*);
+            // ARC MOD END
             break;
         case DT_FINI_ARRAY:
             si->fini_array = reinterpret_cast<linker_function_t*>(base + d->d_un.d_ptr);
             DEBUG("%s destructors (DT_FINI_ARRAY) found at %p", si->name, si->fini_array);
             break;
         case DT_FINI_ARRAYSZ:
-            si->fini_array_count = ((unsigned)d->d_un.d_val) / sizeof(Elf32_Addr);
+            // ARC MOD BEGIN
+            // See the comment for DT_INIT_ARRAYSZ.
+            si->fini_array_count = ((unsigned)d->d_un.d_val) / sizeof(void*);
+            // ARC MOD END
             break;
         case DT_PREINIT_ARRAY:
             si->preinit_array = reinterpret_cast<linker_function_t*>(base + d->d_un.d_ptr);
             DEBUG("%s constructors (DT_PREINIT_ARRAY) found at %p", si->name, si->preinit_array);
             break;
         case DT_PREINIT_ARRAYSZ:
-            si->preinit_array_count = ((unsigned)d->d_un.d_val) / sizeof(Elf32_Addr);
+            // ARC MOD BEGIN
+            // See the comment for DT_INIT_ARRAYSZ.
+            si->preinit_array_count = ((unsigned)d->d_un.d_val) / sizeof(void*);
+            // ARC MOD END
             break;
         case DT_TEXTREL:
             si->has_text_relocations = true;

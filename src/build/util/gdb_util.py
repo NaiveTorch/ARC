@@ -26,6 +26,8 @@ __DISPLAY = os.getenv('DISPLAY')
 # Consistent with NaCl's GDB stub.
 _BARE_METAL_GDB_PORT = 4014
 
+_LOCAL_HOST = '127.0.0.1'
+
 # The default password of Chrome OS test images.
 _CROS_TEST_PASSWORD = 'test0000'
 
@@ -63,7 +65,8 @@ def _create_command_file(command):
   return command_file
 
 
-def maybe_launch_gdb(gdb_target_list, gdb_type, chrome_pid):
+def maybe_launch_gdb(
+        gdb_target_list, gdb_type, nacl_helper_path, nacl_irt_path, chrome_pid):
   """Launches the gdb command if necessary.
 
   It is expected for this method to be called right after chrome is launched.
@@ -73,19 +76,21 @@ def maybe_launch_gdb(gdb_target_list, gdb_type, chrome_pid):
 
   if 'plugin' in gdb_target_list:
     if OPTIONS.is_nacl_build():
-      _launch_nacl_gdb(gdb_type)
-    elif OPTIONS.is_bare_metal_build():
+      _launch_nacl_gdb(gdb_type, nacl_irt_path)
+    else:
+      assert OPTIONS.is_bare_metal_build()
       if platform_util.is_running_on_chromeos():
         _launch_bare_metal_gdbserver_on_chromeos(chrome_pid)
       else:
-        _launch_bare_metal_gdb(chrome_pid, gdb_type)
+        _launch_bare_metal_gdbserver(chrome_pid)
+        _attach_bare_metal_gdb(None, [], nacl_helper_path, gdb_type)
 
 
 def _get_xterm_gdb_startup(title, gdb):
   return ['xterm',
           '-display', __DISPLAY,
           '-title', title, '-e',
-          gdb,  # TODO(crbug.com/391157): restore --tui mode.
+          gdb, '--tui',  # Run gdb with text UI mode.
           '--tty', os.ttyname(sys.stdin.fileno()),
           '-ex', 'set use-deprecated-index-sections on']
 
@@ -179,21 +184,20 @@ def _is_nacl_debug_stub_ready():
     return False
 
 
-def _launch_nacl_gdb(gdb_type):
+def _launch_nacl_gdb(gdb_type, nacl_irt_path):
   # Wait for nacl debug stub gets ready.
   _wait_by_busy_loop(_is_nacl_debug_stub_ready)
 
   nmf = os.path.join(build_common.get_runtime_out_dir(), 'arc.nmf')
   assert os.path.exists(nmf), (
       nmf + ' not found, you will have a bad time debugging')
-  irt = toolchain.get_tool(OPTIONS.target(), 'irt')
 
   # TODO(nativeclient:3739): We explicitly specify the path of
   # runnable-ld.so to work-around the issue in nacl-gdb, but we should
   # let nacl-gdb find the path from NMF.
   gdb_args = [
       '-ex', 'nacl-manifest %s' % nmf,
-      '-ex', 'nacl-irt %s' % irt,
+      '-ex', 'nacl-irt %s' % nacl_irt_path,
       '-ex', 'target remote :4014',
       build_common.get_bionic_runnable_ld_so()]
   _launch_plugin_gdb(gdb_args, gdb_type)
@@ -294,17 +298,23 @@ def _get_bare_metal_gdb_init_commands(remote_address=None, ssh_options=None):
           '-ex', r'echo To start: c or cont\n']
 
 
-def _launch_bare_metal_gdb(chrome_pid, gdb_type):
-  plugin_pid = _get_bare_metal_plugin_pid(chrome_pid)
-  gdb_args = ['-p', str(plugin_pid)] + _get_bare_metal_gdb_init_commands()
-  _launch_plugin_gdb(gdb_args, gdb_type)
+def _attach_bare_metal_gdb(
+    remote_address, ssh_options, nacl_helper_binary, gdb_type):
+  """Attaches to the gdbserver running on |remote_host|.
 
+  To conntect the server running on the local host, |remote_address| should
+  be set to None, rather than '127.0.0.1' or 'localhost'. Otherwise it tries to
+  re-login by ssh command as 'root' user.
+  """
+  # Before launching 'gdb', we wait for that the target port is opened.
+  _wait_by_busy_loop(
+      lambda: _is_remote_port_open(
+          remote_address or _LOCAL_HOST, _BARE_METAL_GDB_PORT))
 
-def _attach_bare_metal_gdb(remote_address, ssh_options, nacl_helper_binary,
-                           gdb_type):
   gdb_args = [
       nacl_helper_binary,
-      '-ex', 'target remote %s:%d' % (remote_address, _BARE_METAL_GDB_PORT)
+      '-ex', 'target remote %s:%d' % (
+          remote_address or _LOCAL_HOST, _BARE_METAL_GDB_PORT)
   ]
   gdb_args.extend(_get_bare_metal_gdb_init_commands(
       remote_address=remote_address, ssh_options=ssh_options))
@@ -321,18 +331,25 @@ def launch_bare_metal_gdb_for_remote_debug(remote_address, ssh_options,
                                            nacl_helper_binary, gdb_type):
   def _thread_callback():
     logging.info('Attaching to remote GDB in %s' % remote_address)
-    _wait_by_busy_loop(
-        lambda: _is_remote_port_open(remote_address, _BARE_METAL_GDB_PORT))
-    _attach_bare_metal_gdb(remote_address, ssh_options, nacl_helper_binary,
-                           gdb_type)
+    _attach_bare_metal_gdb(
+        remote_address, ssh_options, nacl_helper_binary, gdb_type)
 
   thread = threading.Thread(target=_thread_callback)
   thread.daemon = True
   thread.start()
 
 
-def _launch_bare_metal_gdbserver_on_chromeos(chrome_pid):
+def _launch_bare_metal_gdbserver(chrome_pid):
+  # Currently we assume that, here we built -t=bi ARC. So, we use gdbserver32.
+  assert OPTIONS.is_bare_metal_i686()
+  plugin_pid = _get_bare_metal_plugin_pid(chrome_pid)
+  command = [
+      'gdbserver32', '--attach', ':%d' % _BARE_METAL_GDB_PORT, str(plugin_pid)]
+  gdb_process = subprocess.Popen(command)
+  _run_gdb_watch_thread(gdb_process)
 
+
+def _launch_bare_metal_gdbserver_on_chromeos(chrome_pid):
   with open(_CROS_TEST_PASSWORD_FILE, 'w') as f:
     f.write(_CROS_TEST_PASSWORD + '\n')
 
@@ -394,7 +411,7 @@ def get_args_for_stlport_pretty_printers():
   if os.getenv('HOME'):
     user_gdb_init = os.path.join(os.getenv('HOME'), '.gdbinit')
     if os.path.exists(user_gdb_init):
-      gdb_args.extend(['-iex', 'source ' + user_gdb_init])
+      gdb_args.extend(['-x', user_gdb_init])
 
   # Load pretty printers for STLport.
   gdb_args.extend([

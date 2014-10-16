@@ -68,8 +68,12 @@ class Popen(subprocess.Popen):
         'We do not expect to run process with shell.')
     assert kwargs.get('bufsize', 0) == 0, (
         'buffering should be disabled.')
-    super(Popen, self).__init__(
-        args, stdout=stdout, stderr=stderr, stdin=stdin, **kwargs)
+    try:
+      super(Popen, self).__init__(
+          args, stdout=stdout, stderr=stderr, stdin=stdin, **kwargs)
+    except:
+      logging.error('Popen for args %s failed', args)
+      raise
 
     logging.info('Created pid %d; the command follows:', self.pid)
     build_common.log_subprocess_popen(args, **kwargs)

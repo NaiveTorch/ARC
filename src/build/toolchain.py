@@ -20,6 +20,7 @@ _DEXMAKER_PATH = os.path.join('third_party', 'android', 'external', 'dexmaker')
 _NACL_DEPS_PATH = os.path.join(_SCRIPT_DIR, 'DEPS.naclsdk')
 _NACL_SDK_PATH = os.path.join('third_party', 'nacl_sdk', _PEPPER_VERSION)
 _NACL_TOOLS_PATH = os.path.join(_NACL_SDK_PATH, 'tools')
+_PNACL_BIN_PATH = os.path.join(_NACL_SDK_PATH, 'toolchain/linux_pnacl/bin')
 # TODO(crbug.com/247242): support --naclsdktype={debug,release}
 _NACL_SDK_RELEASE = 'Release'  # alternative: Debug
 _QEMU_ARM_LD_PATH = '/usr/arm-linux-gnueabihf'
@@ -240,6 +241,8 @@ def _get_tool_map():
           'deps': [_NACL_DEPS_PATH],
           'llvm_tblgen': build_common.get_build_path_for_executable(
               'tblgen', is_host=True),
+          'clangxx': os.path.join(_PNACL_BIN_PATH, 'pnacl-clang++'),
+          'clang': os.path.join(_PNACL_BIN_PATH, 'pnacl-clang'),
       },
       'nacl_x86_64': {
           'cxx': os.path.join(get_nacl_toolchain_path(), 'x86_64-nacl-g++'),
@@ -263,6 +266,8 @@ def _get_tool_map():
           'deps': [_NACL_DEPS_PATH],
           'llvm_tblgen': build_common.get_build_path_for_executable(
               'tblgen', is_host=True),
+          'clangxx': os.path.join(_PNACL_BIN_PATH, 'pnacl-clang++'),
+          'clang': os.path.join(_PNACL_BIN_PATH, 'pnacl-clang'),
       },
       'bare_metal_i686': {
           'cxx': os.getenv('TARGETCXX', 'g++'),
@@ -335,8 +340,6 @@ def get_tool(target, tool, with_cc_wrapper=True):
   if (tool in ['cc', 'cxx', 'clang', 'clangxx'] and
       OPTIONS.cc_wrapper() and with_cc_wrapper):
     command = OPTIONS.cc_wrapper() + ' ' + command
-  elif tool == 'irt':
-    command = os.path.join(build_common.get_chrome_prebuilt_path(), command)
   return command
 
 
@@ -374,6 +377,10 @@ def get_gcc_version(target):
 def has_clang(target, is_host=False):
   if is_host:
     target = 'host'
+  # TODO(crbug.com/411271): Remove this check. For now, we only use
+  # PNaCl clang when --enable-pnacl-clang is explicitly specified.
+  if target.startswith('nacl_') and not OPTIONS.enable_pnacl_clang():
+    return False
   tools = _get_tool_map()[target]
   result = 'clang' in tools
   assert result == ('clangxx' in tools)

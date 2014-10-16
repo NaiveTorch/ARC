@@ -22,6 +22,7 @@ import time
 import urllib2
 
 from build_options import OPTIONS
+from util import launch_chrome_util
 from util import platform_util
 
 OUT_DIR = 'out'
@@ -39,21 +40,6 @@ COMMON_EDITOR_TMP_FILE_REG = re.compile(
     '|'.join('(?:' + fnmatch.translate(pattern) + ')'
              for pattern in COMMON_EDITOR_TMP_FILE_PATTERNS))
 CHROME_USER_DATA_DIR_PREFIX = 'arc-test-profile-pepper'
-
-_LAUNCH_CHROME_COMMAND_REG = re.compile(r'launch_chrome(\.py)?')
-
-# These arguments to launch_chrome are only meant to be used by the integration
-# test infrastructure, and might lead to confusing results if someone copies and
-# pastes the command line we issue.
-_LAUNCH_CHROME_ARGS_TO_FILTER = (
-    # This option is added to isolate the execution of multiple tests and to
-    # enable them to run in parallel. This is unnecessary when running a
-    # single test manually.
-    '--use-temporary-data-dirs',
-    # This is added to avoid rebuilding the CRX for the test, which is
-    # built in the prepare step of the integration tests. This needs to be
-    # omitted when running a test manually with launch_chrome command.
-    '--nocrxbuild')
 
 # If test succeeds, $out will be written and there will be no terminal
 # output. If the test fails, this shows the test output in the
@@ -133,41 +119,6 @@ def as_dict(input):
   raise TypeError('Cannot convert to dictionary')
 
 
-# TODO(crbug.com/366082): Move the following four functions to somewhere else.
-def get_launch_chrome_command(options=None):
-  options = as_list(options)
-  # Run launch_chrome script using /bin/sh so that the script can be executed
-  # even if it is on the filesystem with noexec option (e.g. Chrome OS)
-  return ['/bin/sh', 'launch_chrome'] + options
-
-
-def parse_launch_chrome_command(args):
-  if args[0] == 'xvfb-run':
-    if '/bin/sh' in args:
-      args = args[args.index('/bin/sh'):]
-  if args[0] == '/bin/sh':
-    args = args[1:]
-  return args
-
-
-def is_launch_chrome_command(argv):
-  args = parse_launch_chrome_command(argv)
-  return bool(_LAUNCH_CHROME_COMMAND_REG.match(
-      os.path.basename(os.path.realpath(args[0]))))
-
-
-def remove_leading_launch_chrome_args(argv):
-  """Removes the leading args of launch chrome command except option args.
-
-  Examples:
-    ['/bin/sh', './launch_chrome', 'run', '-v'] => ['run', '-v']
-    ['./launch_chrome', 'run', '--noninja'] => ['run', '--noninja']
-  """
-  assert(is_launch_chrome_command(argv))
-  args = parse_launch_chrome_command(argv)
-  return args[1:]
-
-
 def log_subprocess_popen(args, bufsize=0, executable=None, stdin=None,
                          stdout=None, stderr=None, preexec_fn=None,
                          close_fds=False, shell=False, cwd=None, env=None,
@@ -179,9 +130,8 @@ def log_subprocess_popen(args, bufsize=0, executable=None, stdin=None,
   """
   safe_args = args
   unsafe_args = []
-  if is_launch_chrome_command(args):
-    safe_args = filter(lambda x: x not in _LAUNCH_CHROME_ARGS_TO_FILTER, args)
-    unsafe_args = filter(lambda x: x in _LAUNCH_CHROME_ARGS_TO_FILTER, args)
+  if launch_chrome_util.is_launch_chrome_command(args):
+    (safe_args, unsafe_args) = launch_chrome_util.split_launch_chrome_args(args)
 
   output_text = []
 
@@ -807,6 +757,15 @@ def rmtree_with_retries(d):
     raise Exception('Failed to remove ' + d)
 
 
+def remove_file_force(filename):
+  """Removes the file by ignoring the nonexistent file error (i.e., rm -f)."""
+  try:
+    os.remove(filename)
+  except OSError as e:
+    if e.errno != os.errno.ENOENT:
+      raise
+
+
 def read_metadata_file(path):
   """Read given metadata file into a list.
 
@@ -821,3 +780,17 @@ def read_metadata_file(path):
       if l:
         reduced_lines.append(l)
   return reduced_lines
+
+
+def write_atomically(filepath, content):
+  """Writes content to a file atomically.
+
+  This function writes the content to a temporary file first, then moves the
+  temporary file to the desired file path. In this way, an incomplete file is
+  not created even if the thread is interrupted in the middle of the function.
+  """
+  with tempfile.NamedTemporaryFile(
+      delete=False, dir=os.path.dirname(filepath)) as f:
+    atexit.register(lambda: remove_file_force(f.name))
+    f.write(content)
+  os.rename(f.name, filepath)

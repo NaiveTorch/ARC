@@ -21,10 +21,6 @@ def generate_ninjas():
     if not vars.is_host():
       src.remove('android/system/core/libcutils/android_reboot.c')
     src.remove('android/system/core/libcutils/iosched_policy.c')
-    # Not sure why our hand-written ninja did these host-only files.
-    if not vars.is_host():
-      src.remove('android/system/core/libcutils/ashmem-dev.c')
-      src.append('android/system/core/libcutils/ashmem-host.c')
     return True
   make_to_ninja.MakefileNinjaTranslator(
       'android/system/core/libcutils').generate(_filter)
