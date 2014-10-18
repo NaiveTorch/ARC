@@ -360,7 +360,8 @@ class PluginUtilInterface {
 
   // Report an unhandled exception.
   virtual void ReportApplicationCrash(const char* log_message,
-                                      const char* stack_trace) = 0;
+                                      const char* stack_trace,
+                                      const char* stack_signature) = 0;
 
   virtual int RunAndWaitForChildPlugin(const char* const argv[],
                                        const char* preopened_fd_args[],

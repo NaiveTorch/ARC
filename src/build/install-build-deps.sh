@@ -25,6 +25,11 @@ pbzip2
 pigz
 "
 
+# Packages for running tests.
+arc_list="$arc_list
+python3
+"
+
 # libosmesa is needed to run Chrome under XVFB and Chromoting.
 arc_list="$arc_list
 libosmesa6:i386

@@ -10,8 +10,6 @@
 #include "common/arc_strace.h"
 #include "gtest/gtest.h"
 
-#if ENABLE_ARC_STRACE
-
 namespace arc {
 
 TEST(ArcStrace, GetAccessModeStr) {
@@ -108,5 +106,3 @@ TEST(ArcStrace, GetMedian) {
 }
 
 }  // namespace arc
-
-#endif  // ENABLE_ARC_STRACE

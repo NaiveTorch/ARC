@@ -18,7 +18,6 @@ import time
 import build_common
 import toolchain
 from build_options import OPTIONS
-from util import platform_util
 
 # Note: DISPLAY may be overwritten in the main() of launch_chrome.py.
 __DISPLAY = os.getenv('DISPLAY')
@@ -74,17 +73,6 @@ def maybe_launch_gdb(
   if 'browser' in gdb_target_list:
     _launch_gdb('browser', str(chrome_pid), gdb_type)
 
-  if 'plugin' in gdb_target_list:
-    if OPTIONS.is_nacl_build():
-      _launch_nacl_gdb(gdb_type, nacl_irt_path)
-    else:
-      assert OPTIONS.is_bare_metal_build()
-      if platform_util.is_running_on_chromeos():
-        _launch_bare_metal_gdbserver_on_chromeos(chrome_pid)
-      else:
-        _launch_bare_metal_gdbserver(chrome_pid)
-        _attach_bare_metal_gdb(None, [], nacl_helper_path, gdb_type)
-
 
 def _get_xterm_gdb_startup(title, gdb):
   return ['xterm',
@@ -137,12 +125,11 @@ def _launch_plugin_gdb(gdb_args, gdb_type):
     # For "xterm" mode, just run the gdb process.
     xterm_args = _get_xterm_gdb_startup('plugin', gdb)
     command = xterm_args + gdb_args
-    gdb_process = subprocess.Popen(command)
-    _run_gdb_watch_thread(gdb_process)
+    subprocess.Popen(command)
   elif gdb_type == 'screen':
     screen_args = _get_screen_gdb_startup('plugin', gdb)
     command = screen_args + gdb_args
-    gdb_process = subprocess.Popen(command)
+    subprocess.Popen(command)
     print '''
 
 =====================================================================
@@ -174,20 +161,7 @@ Then, set breakpoints as you like and start debugging by
 ''' % command_file.name
 
 
-def _is_nacl_debug_stub_ready():
-  # The NaCl debug stub listens on port 4014.
-  # Use netstat to check if that port is in the listening state.
-  try:
-    return ' 127.0.0.1:4014 ' in subprocess.check_output(
-        ['netstat', '--listen', '--numeric'])
-  except:
-    return False
-
-
-def _launch_nacl_gdb(gdb_type, nacl_irt_path):
-  # Wait for nacl debug stub gets ready.
-  _wait_by_busy_loop(_is_nacl_debug_stub_ready)
-
+def _launch_nacl_gdb(gdb_type, nacl_irt_path, port):
   nmf = os.path.join(build_common.get_runtime_out_dir(), 'arc.nmf')
   assert os.path.exists(nmf), (
       nmf + ' not found, you will have a bad time debugging')
@@ -198,7 +172,7 @@ def _launch_nacl_gdb(gdb_type, nacl_irt_path):
   gdb_args = [
       '-ex', 'nacl-manifest %s' % nmf,
       '-ex', 'nacl-irt %s' % nacl_irt_path,
-      '-ex', 'target remote :4014',
+      '-ex', 'target remote :%s' % port,
       build_common.get_bionic_runnable_ld_so()]
   _launch_plugin_gdb(gdb_args, gdb_type)
 
@@ -452,6 +426,38 @@ class GdbHandlerAdapter(object):
     pid = match.group(2)
     logging.info('Found %s process (%s)' % (process_type, pid))
     _launch_gdb(process_type, pid, self._gdb_type)
+
+  def get_error_level(self, child_level):
+    return self._base_handler.get_error_level(child_level)
+
+  def is_done(self):
+    return self._base_handler.is_done()
+
+
+class NaClGdbHandlerAdapter(object):
+  _START_DEBUG_STUB_PATTERN = re.compile(r'debug stub on port (\d+)')
+
+  def __init__(self, base_handler, nacl_irt_path, gdb_type):
+    self._base_handler = base_handler
+    self._nacl_irt_path = nacl_irt_path
+    self._gdb_type = gdb_type
+
+  def handle_timeout(self):
+    self._base_handler.handle_timeout()
+
+  def handle_stdout(self, line):
+    self._base_handler.handle_stdout(line)
+
+  def handle_stderr(self, line):
+    self._base_handler.handle_stderr(line)
+
+    match = NaClGdbHandlerAdapter._START_DEBUG_STUB_PATTERN.search(line)
+    if not match:
+      return
+
+    port = match.group(1)
+    logging.info('Found debug stub on port (%s)' % port)
+    _launch_nacl_gdb(self._gdb_type, self._nacl_irt_path, port)
 
   def get_error_level(self, child_level):
     return self._base_handler.get_error_level(child_level)

@@ -58,6 +58,7 @@ _DEFAULT_RENDERER = _RENDERER_HW
 _ANSI_FB_LOGGING = 'ansi-fb'
 _ANSI_SF_LAYER_LOGGING = 'ansi-sf-layer'
 _BIONIC_LOADER_LOGGING = 'bionic-loader'
+_EGL_API = 'egl-api'
 _EGL_API_TRACING = 'egl-api-tracing'
 _EMUGL_DEBUG_LOGGING = 'emugl-debug'
 _EMUGL_DECODER_LOGGING = 'emugl-decoder'
@@ -75,6 +76,7 @@ _VERBOSE_MEMORY_VIEWER = 'verbose-memory-viewer'
 _ALLOWED_LOGGING = [_ANSI_FB_LOGGING,
                     _ANSI_SF_LAYER_LOGGING,
                     _BIONIC_LOADER_LOGGING,
+                    _EGL_API,
                     _EGL_API_TRACING,
                     _EMUGL_DEBUG_LOGGING,
                     _EMUGL_DECODER_LOGGING,
@@ -170,6 +172,9 @@ class _Options(object):
 
   def is_bionic_loader_logging(self):
     return _BIONIC_LOADER_LOGGING in self._loggers
+
+  def is_egl_api_logging(self):
+    return _EGL_API in self._loggers
 
   def is_egl_api_tracing(self):
     return _EGL_API_TRACING in self._loggers

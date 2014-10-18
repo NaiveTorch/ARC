@@ -66,8 +66,9 @@ def _test_changes(dest):
 def _commit_changes(dest, label):
   logging.info('Commiting changes to open source tree')
   subprocess.check_call(['git', 'add', '-A'], cwd=dest)
-  subprocess.check_call(['git', 'commit', '--allow-empty',
-                         '-m', 'Updated to %s' % label],
+  subprocess.check_call(['git', 'commit',
+                         '--author', 'arc-push <arc-push@chromium.org>',
+                         '--allow-empty', '-m', 'Updated to %s' % label],
                         cwd=dest)
 
 

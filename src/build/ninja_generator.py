@@ -3574,8 +3574,9 @@ def _extract_pattern_from_file(path, pattern, ignore_dependency=False):
   with open_dependency(path, 'r', ignore_dependency) as f:
     try:
       return re.search(pattern, f.read()).groups(1)[0]
-    except Exception as e:
-      raise Exception('Error matching pattern in %s: "%s"' % (path, e))
+    except Exception:
+      raise Exception('Error matching pattern "%s" in "%s"' % (
+          pattern, path))
 
 
 def _truncate_list_at(my_list, my_terminator, is_inclusive=False):

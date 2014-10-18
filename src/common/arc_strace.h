@@ -46,14 +46,8 @@ struct nacl_abi_stat;
 
 namespace arc {
 
-#define ENABLE_ARC_STRACE (!LOG_NDEBUG)
-
-void StraceInit(const std::string& plugin_type_prefix);
-
 // Make C string safe to be formatted by %s.
 #define SAFE_CSTR(s) (s) ? (s) : "(null)"
-
-#if ENABLE_ARC_STRACE
 
 extern bool g_arc_strace_enabled;
 inline bool StraceEnabled() {
@@ -62,6 +56,7 @@ inline bool StraceEnabled() {
 
 #define ATTR_PRINTF(x, y) __attribute__((format(printf, x, y)))
 
+void StraceInit(const std::string& plugin_type_prefix);
 void StraceEnter(const char* name, const char* format, ...) ATTR_PRINTF(2, 3);
 void StraceEnterFD(const char* name, const char* format, ...)
     ATTR_PRINTF(2, 3);
@@ -114,6 +109,8 @@ int64_t GetMedian(std::vector<int64_t>* samples);
 // |name| is the name of function and |format| is printf format to
 // display variable arguments. You must call ARC_STRACE_RETURN* if
 // you called this.
+//
+// TODO(crbug.com/345825): Reorganize the macros.
 # define ARC_STRACE_ENTER(...) do {           \
     if (arc::StraceEnabled())                 \
       arc::StraceEnter(__VA_ARGS__);          \
@@ -153,7 +150,7 @@ int64_t GetMedian(std::vector<int64_t>* samples);
 // See ARC_STRACE_REPORT for more detail.
 # define ARC_STRACE_REPORT_PP_ERROR(err) do {                         \
     if (arc::StraceEnabled() && err)                                  \
-    ARC_STRACE_REPORT("%s", arc::GetPPErrorStr(err).c_str());       \
+      ARC_STRACE_REPORT("%s", arc::GetPPErrorStr(err).c_str());       \
   } while (0)
 
 // ARC_STRACE_RETURN(ssize_t retval)
@@ -165,7 +162,7 @@ int64_t GetMedian(std::vector<int64_t>* samples);
 # define ARC_STRACE_RETURN(retval) do {               \
     if (arc::StraceEnabled())                         \
       arc::StraceReturn(retval);                      \
-    return retval;                                      \
+    return retval;                                    \
   } while (0)
 
 // ARC_STRACE_RETURN_PTR(void* retval, bool needs_strerror)
@@ -175,7 +172,7 @@ int64_t GetMedian(std::vector<int64_t>* samples);
 # define ARC_STRACE_RETURN_PTR(retval, needs_strerror) do {   \
     if (arc::StraceEnabled())                                 \
       arc::StraceReturnPtr(retval, needs_strerror);           \
-    return retval;                                              \
+    return retval;                                            \
   } while (0)
 
 // ARC_STRACE_RETURN_INT(ssize_t retval, bool needs_strerror)
@@ -185,7 +182,7 @@ int64_t GetMedian(std::vector<int64_t>* samples);
 # define ARC_STRACE_RETURN_INT(retval, needs_strerror) do {   \
     if (arc::StraceEnabled())                                 \
       arc::StraceReturnInt(retval, needs_strerror);           \
-    return retval;                                              \
+    return retval;                                            \
   } while (0)
 
 // ARC_STRACE_RETURN_VOID()
@@ -194,7 +191,7 @@ int64_t GetMedian(std::vector<int64_t>* samples);
 # define ARC_STRACE_RETURN_VOID() do {                \
     if (arc::StraceEnabled())                         \
       arc::StraceReturn(0);                           \
-    return;                                             \
+    return;                                           \
   } while (0)
 
 // ARC_STRACE_REGISTER_FD(int fd, const char* name)
@@ -238,26 +235,6 @@ int64_t GetMedian(std::vector<int64_t>* samples);
     if (arc::StraceEnabled())                  \
       arc::StraceResetStats();                 \
   } while (0)
-
-#else  // ENABLE_ARC_STRACE
-
-// TODO(crbug.com/345825): Reorganize the macros.
-# define ARC_STRACE_ENTER(...)
-# define ARC_STRACE_ENTER_FD(...)
-# define ARC_STRACE_REPORT_HANDLER(handler_name)
-# define ARC_STRACE_REPORT(...)
-# define ARC_STRACE_REPORT_PP_ERROR(...)
-# define ARC_STRACE_RETURN(retval) return retval
-# define ARC_STRACE_RETURN_PTR(retval, needs_strerror) return retval
-# define ARC_STRACE_RETURN_INT(retval, needs_strerror) return retval
-# define ARC_STRACE_RETURN_VOID() return
-# define ARC_STRACE_REGISTER_FD(...)
-# define ARC_STRACE_UNREGISTER_FD(...)
-# define ARC_STRACE_DUP_FD(...)
-# define ARC_STRACE_DUMP_STATS(user_str)
-# define ARC_STRACE_RESET_STATS()
-
-#endif  // ENABLE_ARC_STRACE
 
 }  // namespace arc
 

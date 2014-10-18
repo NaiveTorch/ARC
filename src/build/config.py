@@ -195,6 +195,9 @@ def _generate_disallowed_symbols_ninja():
 def generate_binaries_depending_ninjas(_):
   if (not OPTIONS.is_nacl_x86_64() or
       not OPTIONS.is_optimized_build() or
+      # emugl has a different set of static initializers than
+      # graphics_translation.
+      OPTIONS.enable_emugl() or
       # None of the targets analyzed are currently built in the open source
       # repository.
       open_source.is_open_source_repo() or

@@ -61,8 +61,6 @@
 
 namespace arc {
 
-#if ENABLE_ARC_STRACE
-
 // Whether to remove lines that could be considered noise.
 static const bool kNoiseReductionMode = false;
 
@@ -1048,11 +1046,5 @@ std::string GetDlsymHandleStr(const void* handle) {
     return "RTLD_NEXT";
   return base::StringPrintf("%p", handle);
 }
-
-#else
-
-void StraceInit(const std::string&) {}
-
-#endif  // ENABLE_ARC_STRACE
 
 }  // namespace arc

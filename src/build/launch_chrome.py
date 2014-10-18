@@ -451,7 +451,8 @@ class ChromeProcess(filtered_subprocess.Popen):
 def _compute_chrome_plugin_params(parsed_args):
   params = []
   extensions = [
-      remote_executor.resolve_path(build_common.get_runtime_out_dir())]
+      remote_executor.resolve_path(build_common.get_runtime_out_dir()),
+      remote_executor.resolve_path(build_common.get_handler_dir())]
   params.append('--load-extension=' + ','.join(extensions))
 
   params.append(
@@ -710,6 +711,10 @@ def _select_output_handler(parsed_args, stats, chrome_process, **kwargs):
   if 'gpu' in parsed_args.gdb or 'renderer' in parsed_args.gdb:
     output_handler = gdb_util.GdbHandlerAdapter(
         output_handler, parsed_args.gdb, parsed_args.gdb_type)
+
+  if 'plugin' in parsed_args.gdb:
+    output_handler = gdb_util.NaClGdbHandlerAdapter(
+        output_handler, _get_nacl_irt_path(parsed_args), parsed_args.gdb_type)
 
   if (parsed_args.enable_arc_strace and
       parsed_args.arc_strace_output != 'stderr'):
