@@ -39,9 +39,10 @@ def _validate_local_repository(dest):
 def _check_out_matching_branch(dest):
   # We have to update all the remotes to make sure we can find the remote branch
   # this checkout comes from.  On buildbots, only master and tags are fetched by
-  # default.
+  # default.  We have to fetch tags in the destination repo explicitly too.
   subprocess.check_call(['git', 'remote', 'update'])
   subprocess.check_call(['git', 'remote', 'update'], cwd=dest)
+  subprocess.check_call(['git', 'fetch', '--tags'], cwd=dest)
   remote_branch = util.git.get_remote_branch(util.git.get_last_landed_commit())
   if not util.git.has_remote_branch(remote_branch, cwd=dest):
     sys.exit('Open source repository does not have the remote branch %s' %
@@ -63,12 +64,19 @@ def _test_changes(dest):
   subprocess.check_call(['ninja', 'all', '-j50'], cwd=dest)
 
 
+def _set_git_user(name, email, dest):
+  logging.info('Setting user "%s <%s>"' % (name, email))
+  subprocess.check_call(['git', 'config', '--local', 'user.name', name],
+                        cwd=dest)
+  subprocess.check_call(['git', 'config', '--local', 'user.email', email],
+                        cwd=dest)
+
+
 def _commit_changes(dest, label):
   logging.info('Commiting changes to open source tree')
   subprocess.check_call(['git', 'add', '-A'], cwd=dest)
-  subprocess.check_call(['git', 'commit',
-                         '--author', 'arc-push <arc-push@chromium.org>',
-                         '--allow-empty', '-m', 'Updated to %s' % label],
+  subprocess.check_call(['git', 'commit', '--allow-empty', '-m',
+                         'Updated to %s' % label],
                         cwd=dest)
 
 
@@ -130,6 +138,7 @@ def main():
   _test_changes(args.dest)
   if args.push_changes:
     commit_label = subprocess.check_output(['git', 'describe']).strip()
+    _set_git_user('arc-push', 'arc-push@chromium.org', args.dest)
     _commit_changes(args.dest, commit_label)
     _sync_head_tags(args.dest, '.')
     _push_changes(args.dest)
