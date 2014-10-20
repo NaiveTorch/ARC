@@ -69,7 +69,7 @@ _FATAL_ALOG_LINE_HANDLER = _make_line_handler(_FATAL_ALOG_RE)
 _NDK_CRASH_LINE_HANDLER = _make_line_handler(_NDK_CRASH_RE)
 _NDK_USED_LINE_HANDLER = _make_line_handler(_NDK_USED_RE)
 _PASSED_LINE_HANDLER = _make_line_handler(_PASSED_RE)
-_SHUTDOWN_LINE_HANDLER = output_handler.is_exit_line
+_SHUTDOWN_LINE_HANDLER = output_handler.is_abnormal_exit_line
 _TIMEOUT_LINE_HANDLER = _make_line_handler(_TIMEOUT_RE)
 
 

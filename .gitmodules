@@ -364,3 +364,6 @@
 [submodule "third_party/android/packages/apps/Camera2"]
 	path = third_party/android/packages/apps/Camera2
 	url = https://android.googlesource.com/platform/packages/apps/Camera2
+[submodule "third_party/android/packages/providers/MediaProvider"]
+	path = third_party/android/packages/providers/MediaProvider
+	url = https://android.googlesource.com/platform/packages/providers/MediaProvider

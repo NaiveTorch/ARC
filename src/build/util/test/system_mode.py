@@ -81,7 +81,8 @@ class SystemModeThread(threading.Thread):
 
   def handle_stderr(self, line):
     self._logs.add_to_chrome_log(line)
-    if output_handler.is_crash_line(line) or output_handler.is_exit_line(line):
+    if (output_handler.is_crash_line(line) or
+        output_handler.is_abnormal_exit_line(line)):
       self._logs.add_to_adb_log('chrome unexpectedly exited '
                                 'with line: %s' % line)
       self._event.set()

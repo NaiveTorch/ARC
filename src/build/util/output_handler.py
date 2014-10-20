@@ -27,8 +27,8 @@ _CRASH_RE = re.compile(
     r'INFO:CONSOLE.*FINISHED REPORTING CRASH|'
     r'INFO:CONSOLE.*PING TIMEOUT|'
     r'VM aborting')
-_EXIT_RE = re.compile(
-    r'NaCl untrusted code called _exit|'
+_ABNORMAL_EXIT_RE = re.compile(
+    r'NaCl untrusted code called _exit\(0x[^0]|'
     r'INFO:CONSOLE.*Activity stack is empty\. Shutting down\.|'
     r'No GPU support\.')
 # E.g., at java.lang.reflect.Method.invokeNative(Native Method)
@@ -39,8 +39,8 @@ def is_crash_line(line):
   return bool(_CRASH_RE.search(line))
 
 
-def is_exit_line(line):
-  return bool(_EXIT_RE.search(line))
+def is_abnormal_exit_line(line):
+  return bool(_ABNORMAL_EXIT_RE.search(line))
 
 
 def is_java_exception_line(line):
@@ -230,7 +230,7 @@ class ATFTestHandler(object):
       self._reached_done = True
 
   def _handle_line(self, line):
-    if is_crash_line(line) or is_exit_line(line):
+    if is_crash_line(line) or is_abnormal_exit_line(line):
       self._reached_done = True
       return False
 
@@ -274,7 +274,7 @@ class PerfTestHandler(object):
 
   def _handle_line_common(self, line):
     self.full_output.append(line)
-    if is_crash_line(line) or is_exit_line(line):
+    if is_crash_line(line) or is_abnormal_exit_line(line):
       sys.stderr.write(line)
       # TODO(crbug.com/397454): This sometimes happens in
       # perf_test.py. We should identify the actual cause of this
