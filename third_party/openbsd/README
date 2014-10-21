@@ -12,3 +12,6 @@ http://www.openbsd.org/cgi-bin/cvsweb/src/sys/arch/amd64/include/setjmp.h?rev=1.
 src/lib/libc/arch/amd64/gen/setjmp.S is downloaded from
 
 http://www.openbsd.org/cgi-bin/cvsweb/src/lib/libc/arch/amd64/gen/setjmp.S?rev=1.3;content-type=text%2Fplain
+
+TODO(crbug.com/414583): "L" has x86-64 support. We should be able to
+remove them.

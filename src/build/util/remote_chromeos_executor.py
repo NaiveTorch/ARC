@@ -226,7 +226,7 @@ def extend_chrome_params(parsed_args, params):
   assert os.path.exists(_CHROME_COMMAND_LINE_FILE), (
       '%s does not exist.' % _CHROME_COMMAND_LINE_FILE)
   with open(_CHROME_COMMAND_LINE_FILE) as f:
-    chrome_command_line = f.read()
+    chrome_command_line = f.read().rstrip()
   params_str = re.sub('^%s ' % _REMOTE_CHROME_EXE_BINARY, '',
                       chrome_command_line)
   # Use ' -' instead of ' ' to split the command line flags because the flag

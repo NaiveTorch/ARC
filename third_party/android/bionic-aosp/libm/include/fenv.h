@@ -1,12 +1,3 @@
-// ARC MOD TRACK "third_party/android/bionic-aosp/libm/include/fenv.h"
-// ARC MOD BEGIN
-// Note AOSP's fenv.h is architecture independent but KitKat's depends
-// on the target architecture. As we do not want to copy fenv.h for
-// all architectures from AOSP, we put this architectures independent
-// potion of fenv.h from AOSP to this x86-64 specific directory.
-// TODO(crbug.com/414583): Remove this file. "L" has this file so we
-// do not need this in mods directory.
-// ARC MOD END
 /*  $OpenBSD: fenv.h,v 1.2 2011/05/25 21:46:49 martynas Exp $ */
 /*  $NetBSD: fenv.h,v 1.2.4.1 2011/02/08 16:18:55 bouyer Exp $  */
 

@@ -502,6 +502,12 @@ Native Client Debugging
                       'directory, which contains the unpacked CRX files, is '
                       'also removed.')
 
+  parser.add_argument('--use-all-play-services', action='store_true',
+                      help='Enable all available Play Services APIs')
+
+  parser.add_argument('--use-test-app', action='store_true',
+                      help='Use the ARC Test App ID with enabled APIs')
+
   parser.add_argument('--user-data-dir', metavar='<path>',
                       help='Specify user data dir for Chrome to run')
 

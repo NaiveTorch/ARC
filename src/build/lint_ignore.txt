@@ -11,11 +11,6 @@
 # ---------------------------------------------------------------------------
 
 {
-  # These are from freebsd but not originally in Android so have non-Android
-  # copyright.
-  "mods/android/bionic/libm/amd64/fenv.c": ["copyright"],
-  "mods/android/bionic/libm/include/amd64/fenv.h": ["copyright"],
-
   # These files comes from NaCl and so have non-Android copyrights.
   "mods/android/bionic/libc/arch-nacl/syscalls/irt_nonsfi.h": ["copyright"],
   "mods/android/bionic/libc/include/ucontext.h": ["copyright"],
@@ -48,9 +43,13 @@
   # That file contains large intrinsics table with it's own style.
   "src/ndk_translation/backend/x86_64/intrinsics.cc": ["cpplint"],
 
-  # TODO(crbug.com/406226): Remove this file once ARC is rebasing to L.
+  # TODO(crbug.com/406226): Remove these files once ARC is rebasing to L.
+  "third_party/android/bionic-aosp/libc/arch-x86_64/include/machine/fpu.h": ["cpplint"],
   "third_party/android/bionic-aosp/libc/include/locale.h": ["cpplint"],
   "third_party/android/bionic-aosp/libc/include/xlocale.h": ["cpplint"],
+  "third_party/android/bionic-aosp/libm/include/fenv.h": ["cpplint"],
+  "third_party/android/bionic-aosp/libm/include/amd64/machine/fenv.h": ["cpplint"],
+  "third_party/android/bionic-aosp/libm/amd64/fenv.c": ["cpplint"],
 
   # Third party files.
   "third_party/examples/san-angeles/jni/importgl.h": ["cpplint"],

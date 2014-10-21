@@ -4,8 +4,12 @@ This directory contains newer Bionic sources from AOSP master.
 We partially use modified version of them, and these modified files track
 files in this directory.
 
+- libc/arch-x86_64/include/machine/fpu.h
 - libc/include/locale.h
 - libc/include/xlocale.h
+- libm/amd64/fenv.c
+- libm/include/amd64/machine/fenv.h
+- libm/include/fenv.h
 
 They are from AOSP Bionic (https://android.googlesource.com/platform/bionic),
 and the revision is 001815ed197280409d08e9622890e7462c6e6831

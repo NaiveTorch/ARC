@@ -1,12 +1,3 @@
-// ARC MOD TRACK "third_party/android/bionic-aosp/libm/amd64/fenv.c"
-// ARC MOD BEGIN
-// TODO(crbug.com/414583): Remove this file. "L" has this file so we
-// do not need this in mods directory.
-#if defined(__native_client__) && defined(__clang__)
-// See https://code.google.com/p/nativeclient/issues/detail?id=3957
-#error "This does not compile with PNaCl clang due to nativeclient:3957"
-#endif
-// ARC MOD END
 /*  $OpenBSD: fenv.c,v 1.3 2012/12/05 23:20:02 deraadt Exp $  */
 /*  $NetBSD: fenv.c,v 1.1 2010/07/31 21:47:53 joerg Exp $ */
 

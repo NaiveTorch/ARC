@@ -324,8 +324,6 @@ def _filter_libc(vars):
   if OPTIONS.is_x86_64():
     vars.get_sources().append(
         'android/bionic/libc/arch-amd64/bionic/setjmp.S')
-    # Most files in arch-x86/include can be used even for x86-64
-    # NaCl, but we need a few x86-64 specific headers.
     vars.get_includes().insert(0, 'android/bionic/libc/arch-amd64/include')
   if OPTIONS.is_arm():
     vars.get_sources().append(
@@ -495,8 +493,11 @@ def _generate_libm_ninja():
     if OPTIONS.is_arm():
       vars.get_includes().append('android/bionic/libc/arch-arm/include')
     else:
+      # TODO(crbug.com/414583): "L" has arch-x86_64 directory so we
+      # should have this include path only for i686 targets.
       vars.get_includes().append('android/bionic/libc/arch-x86/include')
       if OPTIONS.is_x86_64():
+        vars.get_includes().insert(0, 'android/bionic/libc/arch-amd64/include')
         sources.remove(
             'android/bionic/libm/upstream-freebsd/lib/msun/src/e_sqrtf.c')
         sources.remove('android/bionic/libm/i387/fenv.c')
