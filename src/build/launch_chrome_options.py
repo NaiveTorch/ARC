@@ -184,7 +184,6 @@ def _resolve_perf_test_mode(args):
   if args.mode == 'perftest':
     # Use clean profile for performance test.
     args.use_temporary_data_dirs = True
-    args.no_cache_warming = False
     if args.minimum_launch_delay is not None:
       return
     if args.remote:

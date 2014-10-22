@@ -298,12 +298,8 @@ class Popen(subprocess.Popen):
             return True, then it will not be terminated.
         output_handler.handle_stdout(line)
             Called whenever the process writes a line of text to stdout.
-            If a number is returned from this function, this class will update
-            the timeout using the value as relative seconds.
         output_handler.handle_stderr(line)
             Called whenever the process writes a line of text to stderr.
-            If a number is returned from this function, this class will update
-            the timeout using the value as relative seconds.
         output_handler.handle_timeout()
             Called whenever the process timeout is over.
 

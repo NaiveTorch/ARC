@@ -445,7 +445,7 @@ IRT_WRAPPER(getdents, int fd, struct dirent* dirp, size_t count,
     *nread = result;
     ARC_STRACE_REPORT("nread=\"%zu\"", *nread);
   }
-  ARC_STRACE_RETURN(result >= 0 ? 0 : errno);
+  ARC_STRACE_RETURN_IRT_WRAPPER(result >= 0 ? 0 : errno);
 }
 
 IRT_WRAPPER(getcwd, char* buf, size_t size) {
@@ -1058,7 +1058,7 @@ IRT_WRAPPER(fstat, int fd, struct nacl_abi_stat *buf) {
     StatToNaClAbiStat(&st, buf);
     ARC_STRACE_REPORT("buf=%s", arc::GetNaClAbiStatStr(buf).c_str());
   }
-  ARC_STRACE_RETURN_INT(result, result != 0);
+  ARC_STRACE_RETURN_IRT_WRAPPER(result);
 }
 
 template <typename OffsetType>

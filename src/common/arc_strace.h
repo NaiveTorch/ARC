@@ -194,6 +194,14 @@ int64_t GetMedian(std::vector<int64_t>* samples);
     return;                                           \
   } while (0)
 
+// ARC_STRACE_RETURN_IRT_WRAPPER(int retval)
+//
+// A variant of ARC_STRACE_RETURN for IRT wrappers.
+// |retval| must be equal to |errno| unless |retval| is 0.
+// Note: |retval| might be evaluated twice.
+# define ARC_STRACE_RETURN_IRT_WRAPPER(retval) \
+  ARC_STRACE_RETURN_INT(retval, (retval) != 0)
+
 // ARC_STRACE_REGISTER_FD(int fd, const char* name)
 //
 // Registers a new file descriptor. This |name| will be used to pretty
