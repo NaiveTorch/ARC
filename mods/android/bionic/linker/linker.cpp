@@ -1069,6 +1069,14 @@ static soinfo* load_library(const char* name) {
       si->entry = header.e_entry + elf_reader.load_bias();
     if (!si->phdr)
       DL_ERR("Cannot locate a program header in \"%s\".", name);
+
+    // Set is_ndk appropriately. NDK libraries in APKs are in
+    // /data/app-lib/<app-name>.
+#if defined(USE_NDK_DIRECT_EXECUTION)
+    const char kNdkLibraryDir[] = "/data/app-lib/";
+    si->is_ndk = (!strncmp(name, kNdkLibraryDir, sizeof(kNdkLibraryDir) - 1) ||
+                  !strncmp(name, kVendorLibDir, sizeof(kVendorLibDir) - 1));
+#endif
 #endif
     // ARC MOD END
     return si;
@@ -1346,16 +1354,24 @@ static int soinfo_relocate(soinfo* si, Elf32_Rel* rel, unsigned count,
                   }
               }
 
-              // Then look up the symbol following Android's default
-              // semantics.
-              s = soinfo_do_lookup(si, sym_name, &lsi, needed);
-              // When the symbol is not found, we still need to
-              // look up the main binary, as we link some shared
-              // objects (e.g., liblog.so) into arc.nexe
-              // TODO(crbug.com/400947): Remove this code once we have
-              // stopped converting .so files to .a.
-              if (!s)
-                  s = soinfo_do_lookup(somain, sym_name, &lsi, needed);
+#if defined(USE_NDK_DIRECT_EXECUTION)
+              // For a NDK binary, we look up DT_NEEDED of the binary
+              // first, as this is the original behavior of Android.
+              // TODO(crbug.com/368131): Add an integration test for this.
+              if (si->is_ndk) {
+                  s = soinfo_do_lookup(si, sym_name, &lsi, needed);
+                  // When the symbol is not found, we still need to
+                  // look up the main binary, as we link some shared
+                  // objects (e.g., liblog.so) into arc.nexe
+                  if (!s)
+                      s = soinfo_do_lookup(somain, sym_name, &lsi, needed);
+              } else
+#endif
+              // ARC expects RTLD_GLOBAL semantics. In other words,
+              // all symbols should be available for binaries
+              // subsequently loaded. To achieve this, we lookup all
+              // symbols from all loaded binaries.
+              s = dlsym_linear_lookup(sym_name, &lsi, NULL);
 #else
               s = soinfo_do_lookup(si, sym_name, &lsi, needed);
 #endif
